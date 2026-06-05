@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CategoriaDemografica {
+  NINOS
+  NINAS
+  ADOLESCENTE_FEMENINA
+  ADOLESCENTE_MASCULINO
+  ADULTO_FEMENINO
+  ADULTO_MASCULINO
+}
+
+enum EstatusMatricula {
+  ACTIVO
+  INACTIVO
+}
+
+model Agrupacion {
+  id        String   @id @default(cuid())
+  codigo    String   @unique
+  nombre    String
+  activa    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  estudiantes       Estudiante[]
+  ensayos           Ensayo[]
+  reportesMensuales ReporteMensual[]
+}
+
+model Obra {
+  id         String   @id @default(cuid())
+  titulo     String
+  compositor String?
+  createdAt  DateTime @default(now())
+
+  reportes ReporteMensualObra[]
+}
+
+model Estudiante {
+  id                   String               @id @default(cuid())
+  agrupacionId         String
+  nombre               String
+  apellido             String
+  categoriaDemografica CategoriaDemografica
+  fechaNacimiento      DateTime?
+  activoEnSistema      Boolean              @default(true)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  agrupacion  Agrupacion   @relation(fields: [agrupacionId], references: [id])
+  asistencias Asistencia[]
+}
+
+model Ensayo {
+  id               String   @id @default(cuid())
+  agrupacionId     String
+  fecha            DateTime
+  notas            String?
+  reporteMensualId String?
+  createdAt        DateTime @default(now())
+
+  agrupacion     Agrupacion      @relation(fields: [agrupacionId], references: [id])
+  reporteMensual ReporteMensual? @relation(fields: [reporteMensualId], references: [id])
+  asistencias    Asistencia[]
+
+  @@unique([agrupacionId, fecha])
+}
+
+model Asistencia {
+  id           String   @id @default(cuid())
+  ensayoId     String
+  estudianteId String
+  presente     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  ensayo     Ensayo     @relation(fields: [ensayoId], references: [id], onDelete: Cascade)
+  estudiante Estudiante @relation(fields: [estudianteId], references: [id])
+
+  @@unique([ensayoId, estudianteId])
+}
+
+model ReporteMensual {
+  id           String @id @default(cuid())
+  agrupacionId String
+  anio         Int
+  mes          Int
+
+  totalNinos                  Int @default(0)
+  totalNinas                  Int @default(0)
+  totalAdolescentesFemeninas  Int @default(0)
+  totalAdolescentesMasculinos Int @default(0)
+  totalAdultosFemeninos       Int @default(0)
+  totalAdultosMasculinos      Int @default(0)
+
+  repertorioTexto String?
+  observaciones   String?
+  cerrado         Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  agrupacion Agrupacion           @relation(fields: [agrupacionId], references: [id])
+  ensayos    Ensayo[]
+  obras      ReporteMensualObra[]
+
+  @@unique([agrupacionId, anio, mes])
+}
+
+model ReporteMensualObra {
+  reporteMensualId String
+  obraId           String
+
+  reporte ReporteMensual @relation(fields: [reporteMensualId], references: [id], onDelete: Cascade)
+  obra    Obra           @relation(fields: [obraId], references: [id])
+
+  @@id([reporteMensualId, obraId])
+}
