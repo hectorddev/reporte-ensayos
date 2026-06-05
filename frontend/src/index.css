@@ -11,6 +11,8 @@
 
 body {
   margin: 0;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 .app {
@@ -201,6 +203,7 @@ body {
 
 .reportes-tabla-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
@@ -397,12 +400,14 @@ label {
 select,
 input[type='date'],
 input[type='text'],
+input[type='number'],
 textarea {
   width: 100%;
   padding: 0.6rem 0.75rem;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   font: inherit;
+  font-size: max(16px, 1rem);
 }
 
 textarea {
@@ -676,6 +681,7 @@ textarea {
 
 .asistencia-grid {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .asistencia-table {
@@ -749,4 +755,149 @@ textarea {
 .estudiante-activo {
   color: #0f766e;
   font-weight: 600;
+}
+
+/* ===========================================================
+   Responsive / Mobile
+   =========================================================== */
+
+/* Tablet y abajo */
+@media (max-width: 768px) {
+  .app,
+  .admin-layout {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .demografia-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
+
+/* Teléfono */
+@media (max-width: 640px) {
+  .app,
+  .admin-layout {
+    padding: 1.25rem 0.85rem 2.5rem;
+  }
+
+  .app-header h1,
+  .admin-header h1,
+  .admin-edit-header h2 {
+    font-size: 1.4rem;
+    line-height: 1.25;
+  }
+
+  /* Headers con space-between -> apilar */
+  .admin-header,
+  .admin-edit-header,
+  .reportes-lista-header,
+  .reporte-detalle-header,
+  .fechas-ensayo-header,
+  .detalle-meta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-header,
+  .admin-edit-header {
+    gap: 0.85rem;
+  }
+
+  /* Acciones de header a ancho completo */
+  .admin-header-actions,
+  .admin-acciones,
+  .fechas-acciones {
+    flex-wrap: wrap;
+  }
+
+  .admin-header-actions .btn,
+  .reportes-lista-header .btn {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Filtros apilados */
+  .reportes-filtros {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Periodo: contenido apilado */
+  .periodo-selector {
+    flex-wrap: wrap;
+  }
+
+  /* Tap targets cómodos */
+  .btn {
+    min-height: 44px;
+  }
+
+  .nav-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .app-nav {
+    flex-wrap: wrap;
+  }
+
+  .app-nav .nav-btn {
+    flex: 1 1 calc(50% - 0.5rem);
+    text-align: center;
+  }
+
+  /* Modal a pantalla completa */
+  .reporte-detalle-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .reporte-detalle {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+    padding: 1.25rem;
+  }
+
+  /* Densidad de tablas */
+  .reportes-tabla,
+  .asistencia-table {
+    font-size: 0.8rem;
+  }
+
+  .reportes-tabla th,
+  .reportes-tabla td {
+    padding: 0.55rem 0.65rem;
+  }
+
+  /* Demografía: 2 columnas */
+  .demografia-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .demografia-item output {
+    font-size: 1.25rem;
+  }
+
+  /* Calendario más compacto */
+  .calendario-grid {
+    gap: 0.25rem;
+  }
+
+  .calendario-celda {
+    font-size: 0.8rem;
+  }
+
+  .reporte-mensual-form section {
+    padding: 1rem;
+  }
+}
+
+/* Pantallas muy pequeñas */
+@media (max-width: 380px) {
+  .demografia-grid {
+    grid-template-columns: 1fr;
+  }
 }
