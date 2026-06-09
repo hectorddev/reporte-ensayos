@@ -1,10 +1,9 @@
 import { ADMIN_PASSWORD } from '../../../lib/datosEstaticos';
 import {
   actualizarReporte,
-  buscarReporte,
   eliminarReporte,
-  leerReportes,
-} from '../../../lib/almacenamiento';
+  obtenerReportes,
+} from '../../../lib/nube';
 import {
   construirRespuesta,
   formDataAReporte,
@@ -26,30 +25,27 @@ export async function adminLogin(password: string): Promise<void> {
   }
 }
 
-export function fetchAdminReportes(): Promise<ReporteMensualGuardado[]> {
-  const reportes = leerReportes().sort(
-    (a, b) => b.anio - a.anio || b.mes - a.mes
-  );
-  return Promise.resolve(reportes);
+export async function fetchAdminReportes(): Promise<ReporteMensualGuardado[]> {
+  const reportes = await obtenerReportes();
+  return reportes.sort((a, b) => b.anio - a.anio || b.mes - a.mes);
 }
 
-export function fetchAdminReporte(id: string): Promise<ReporteMensualGuardado> {
-  const reporte = buscarReporte(id);
-  if (!reporte) return Promise.reject(new Error('Reporte no encontrado'));
-  return Promise.resolve(reporte);
+export async function fetchAdminReporte(id: string): Promise<ReporteMensualGuardado> {
+  const reportes = await obtenerReportes();
+  const reporte = reportes.find((r) => r.id === id);
+  if (!reporte) throw new Error('Reporte no encontrado');
+  return reporte;
 }
 
-export function actualizarAdminReporte(
+export async function actualizarAdminReporte(
   id: string,
   data: ReporteMensualFormData
 ): Promise<ReporteMensualResponse> {
-  const reporte = actualizarReporte(id, formDataAReporte(data));
-  return Promise.resolve(
-    construirRespuesta(reporte, data, 'Reporte actualizado correctamente')
-  );
+  const reporte = await actualizarReporte(id, formDataAReporte(data));
+  return construirRespuesta(reporte, data, 'Reporte actualizado correctamente');
 }
 
-export function eliminarAdminReporte(id: string): Promise<{ mensaje: string }> {
-  eliminarReporte(id);
-  return Promise.resolve({ mensaje: 'Reporte eliminado' });
+export async function eliminarAdminReporte(id: string): Promise<{ mensaje: string }> {
+  await eliminarReporte(id);
+  return { mensaje: 'Reporte eliminado' };
 }

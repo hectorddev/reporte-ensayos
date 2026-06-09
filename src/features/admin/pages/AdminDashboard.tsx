@@ -5,7 +5,7 @@ import { AdminLogin } from '../components/AdminLogin';
 import { fetchAdminReportes, eliminarAdminReporte } from '../api/admin.api';
 import { isAdminAuthenticated } from '../../../lib/adminAuth';
 import { exportarReportesAExcel } from '../../../lib/exportarExcel';
-import { borrarTodo } from '../../../lib/almacenamiento';
+import { limpiarTodo } from '../../../lib/nube';
 import {
   MESES,
   totalDesdeReporte,
@@ -41,13 +41,13 @@ export function AdminDashboard() {
     if (!ok) alert('No hay reportes para exportar.');
   };
 
-  const borrarDatos = () => {
+  const borrarDatos = async () => {
     const confirmar = window.confirm(
       `¿Borrar TODOS los reportes guardados (${reportes.length})? Esta acción no se puede deshacer.\n\nAsegúrate de haber exportado el Excel antes.`
     );
     if (!confirmar) return;
 
-    borrarTodo();
+    await limpiarTodo();
     queryClient.invalidateQueries({ queryKey: ['admin-reportes'] });
     queryClient.invalidateQueries({ queryKey: ['reportes-mensuales'] });
   };

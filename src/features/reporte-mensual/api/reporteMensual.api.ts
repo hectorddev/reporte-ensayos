@@ -1,5 +1,5 @@
 import { AGRUPACIONES, buscarAgrupacion } from '../../../lib/datosEstaticos';
-import { guardarReporte, leerReportes } from '../../../lib/almacenamiento';
+import { guardarReporte, obtenerReportes } from '../../../lib/nube';
 import {
   totalMatricula,
   type Agrupacion,
@@ -72,10 +72,10 @@ export interface FiltrosReportes {
   mes?: number;
 }
 
-export function fetchReportesMensuales(
+export async function fetchReportesMensuales(
   filtros?: FiltrosReportes
 ): Promise<ReporteMensualGuardado[]> {
-  let reportes = leerReportes();
+  let reportes = await obtenerReportes();
   if (filtros?.agrupacionId) {
     reportes = reportes.filter((r) => r.agrupacionId === filtros.agrupacionId);
   }
@@ -87,14 +87,12 @@ export function fetchReportesMensuales(
   }
   // Más recientes primero (por periodo).
   reportes.sort((a, b) => b.anio - a.anio || b.mes - a.mes);
-  return Promise.resolve(reportes);
+  return reportes;
 }
 
-export function submitReporteMensual(
+export async function submitReporteMensual(
   data: ReporteMensualFormData
 ): Promise<ReporteMensualResponse> {
-  const reporte = guardarReporte(formDataAReporte(data));
-  return Promise.resolve(
-    construirRespuesta(reporte, data, 'Reporte guardado correctamente')
-  );
+  const reporte = await guardarReporte(formDataAReporte(data));
+  return construirRespuesta(reporte, data, 'Reporte guardado correctamente');
 }
