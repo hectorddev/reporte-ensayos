@@ -1,24 +1,69 @@
-import { getApiBase } from '../../../lib/api';
-import type {
-  Agrupacion,
-  ReporteMensualFormData,
-  ReporteMensualGuardado,
-  ReporteMensualResponse,
+import { AGRUPACIONES, buscarAgrupacion } from '../../../lib/datosEstaticos';
+import { guardarReporte, leerReportes } from '../../../lib/almacenamiento';
+import {
+  totalMatricula,
+  type Agrupacion,
+  type ReporteMensualFormData,
+  type ReporteMensualGuardado,
+  type ReporteMensualResponse,
 } from '../types/reporteMensual.types';
 
-const API = getApiBase();
+/**
+ * Capa de datos 100% local (localStorage). Mantiene las mismas firmas que la
+ * versión con backend para que componentes y hooks no cambien.
+ */
 
-async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? 'Error en la solicitud');
-  }
-  return res.json();
+/** Convierte los datos del formulario en un reporte almacenable. */
+export function formDataAReporte(
+  data: ReporteMensualFormData
+): Omit<ReporteMensualGuardado, 'id' | 'createdAt'> {
+  const agrupacion =
+    buscarAgrupacion(data.agrupacionId) ?? {
+      id: data.agrupacionId,
+      codigo: data.agrupacionId,
+      nombre: data.agrupacionId,
+    };
+
+  const repertorioTexto = data.temasRepertorio.filter(Boolean).join('\n') || null;
+
+  return {
+    agrupacionId: data.agrupacionId,
+    anio: data.anio,
+    mes: data.mes,
+    totalNinos: data.matricula.ninos,
+    totalNinas: data.matricula.ninas,
+    totalAdolescentesFemeninas: data.matricula.adolescentesFemeninas,
+    totalAdolescentesMasculinos: data.matricula.adolescentesMasculinos,
+    totalAdultosFemeninos: data.matricula.adultosFemeninos,
+    totalAdultosMasculinos: data.matricula.adultosMasculinos,
+    repertorioTexto,
+    observaciones: data.observaciones?.trim() || null,
+    cerrado: true,
+    agrupacion,
+    ensayos: data.fechasEnsayos.map((fecha) => ({
+      id: `${data.agrupacionId}-${fecha}`,
+      fecha: `${fecha}T12:00:00.000Z`,
+    })),
+  };
+}
+
+export function construirRespuesta(
+  reporte: ReporteMensualGuardado,
+  data: ReporteMensualFormData,
+  mensaje: string
+): ReporteMensualResponse {
+  return {
+    reporte,
+    matriculaGuardada: {
+      ...data.matricula,
+      totalActivos: totalMatricula(data.matricula),
+    },
+    mensaje,
+  };
 }
 
 export function fetchAgrupaciones(): Promise<Agrupacion[]> {
-  return fetchJson(`${API}/agrupaciones`);
+  return Promise.resolve(AGRUPACIONES);
 }
 
 export interface FiltrosReportes {
@@ -27,19 +72,29 @@ export interface FiltrosReportes {
   mes?: number;
 }
 
-export function fetchReportesMensuales(filtros?: FiltrosReportes): Promise<ReporteMensualGuardado[]> {
-  const params = new URLSearchParams();
-  if (filtros?.agrupacionId) params.set('agrupacionId', filtros.agrupacionId);
-  if (filtros?.anio) params.set('anio', String(filtros.anio));
-  if (filtros?.mes) params.set('mes', String(filtros.mes));
-  const query = params.toString();
-  return fetchJson(`${API}/reportes-mensuales${query ? `?${query}` : ''}`);
+export function fetchReportesMensuales(
+  filtros?: FiltrosReportes
+): Promise<ReporteMensualGuardado[]> {
+  let reportes = leerReportes();
+  if (filtros?.agrupacionId) {
+    reportes = reportes.filter((r) => r.agrupacionId === filtros.agrupacionId);
+  }
+  if (filtros?.anio) {
+    reportes = reportes.filter((r) => r.anio === filtros.anio);
+  }
+  if (filtros?.mes) {
+    reportes = reportes.filter((r) => r.mes === filtros.mes);
+  }
+  // Más recientes primero (por periodo).
+  reportes.sort((a, b) => b.anio - a.anio || b.mes - a.mes);
+  return Promise.resolve(reportes);
 }
 
-export function submitReporteMensual(data: ReporteMensualFormData): Promise<ReporteMensualResponse> {
-  return fetchJson<ReporteMensualResponse>(`${API}/reportes-mensuales`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
+export function submitReporteMensual(
+  data: ReporteMensualFormData
+): Promise<ReporteMensualResponse> {
+  const reporte = guardarReporte(formDataAReporte(data));
+  return Promise.resolve(
+    construirRespuesta(reporte, data, 'Reporte guardado correctamente')
+  );
 }

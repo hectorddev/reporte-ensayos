@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AdminLogin } from '../components/AdminLogin';
 import { fetchAdminReportes, eliminarAdminReporte } from '../api/admin.api';
 import { isAdminAuthenticated } from '../../../lib/adminAuth';
+import { exportarReportesAExcel } from '../../../lib/exportarExcel';
+import { borrarTodo } from '../../../lib/almacenamiento';
 import {
   MESES,
   totalDesdeReporte,
@@ -34,6 +36,22 @@ export function AdminDashboard() {
     }
   };
 
+  const exportar = async () => {
+    const ok = await exportarReportesAExcel();
+    if (!ok) alert('No hay reportes para exportar.');
+  };
+
+  const borrarDatos = () => {
+    const confirmar = window.confirm(
+      `¿Borrar TODOS los reportes guardados (${reportes.length})? Esta acción no se puede deshacer.\n\nAsegúrate de haber exportado el Excel antes.`
+    );
+    if (!confirmar) return;
+
+    borrarTodo();
+    queryClient.invalidateQueries({ queryKey: ['admin-reportes'] });
+    queryClient.invalidateQueries({ queryKey: ['reportes-mensuales'] });
+  };
+
   if (!autenticado) {
     return <AdminLogin onLogin={() => setAutenticado(true)} />;
   }
@@ -42,9 +60,27 @@ export function AdminDashboard() {
     <div className="admin-dashboard">
       <div className="reportes-lista-header">
         <h2>Todos los reportes ({reportes.length})</h2>
-        <button type="button" className="btn btn-secondary" onClick={() => refetch()}>
-          Actualizar
-        </button>
+        <div className="admin-acciones">
+          <button type="button" className="btn btn-secondary" onClick={() => refetch()}>
+            Actualizar
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={exportar}
+            disabled={reportes.length === 0}
+          >
+            Exportar a Excel
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={borrarDatos}
+            disabled={reportes.length === 0}
+          >
+            Borrar todos los datos
+          </button>
+        </div>
       </div>
 
       {isLoading && <p>Cargando reportes...</p>}

@@ -1,75 +1,55 @@
-import { getApiBase } from '../../../lib/api';
-import { getAdminPassword } from '../../../lib/adminAuth';
+import { ADMIN_PASSWORD } from '../../../lib/datosEstaticos';
+import {
+  actualizarReporte,
+  buscarReporte,
+  eliminarReporte,
+  leerReportes,
+} from '../../../lib/almacenamiento';
+import {
+  construirRespuesta,
+  formDataAReporte,
+} from '../../reporte-mensual/api/reporteMensual.api';
 import type {
   ReporteMensualFormData,
   ReporteMensualGuardado,
   ReporteMensualResponse,
 } from '../../reporte-mensual/types/reporteMensual.types';
 
-const API = `${getApiBase()}/admin`;
-
-function adminHeaders(): HeadersInit {
-  const password = getAdminPassword();
-  return {
-    'Content-Type': 'application/json',
-    ...(password ? { 'X-Admin-Password': password } : {}),
-  };
-}
-
-async function fetchAdmin<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      ...adminHeaders(),
-      ...options?.headers,
-    },
-  });
-
-  if (res.status === 401) {
-    throw new Error('Sesión de administrador expirada o no autorizada');
-  }
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? 'Error en la solicitud');
-  }
-
-  return res.json();
-}
+/**
+ * Administración 100% local. El "login" valida contra una contraseña fija del
+ * código: no es seguridad real, solo evita ediciones accidentales.
+ */
 
 export async function adminLogin(password: string): Promise<void> {
-  const res = await fetch(`${API}/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Contraseña incorrecta' }));
-    throw new Error(err.error ?? 'Contraseña incorrecta');
+  if (password !== ADMIN_PASSWORD) {
+    throw new Error('Contraseña incorrecta');
   }
 }
 
 export function fetchAdminReportes(): Promise<ReporteMensualGuardado[]> {
-  return fetchAdmin(`${API}/reportes-mensuales`);
+  const reportes = leerReportes().sort(
+    (a, b) => b.anio - a.anio || b.mes - a.mes
+  );
+  return Promise.resolve(reportes);
 }
 
 export function fetchAdminReporte(id: string): Promise<ReporteMensualGuardado> {
-  return fetchAdmin(`${API}/reportes-mensuales/${id}`);
+  const reporte = buscarReporte(id);
+  if (!reporte) return Promise.reject(new Error('Reporte no encontrado'));
+  return Promise.resolve(reporte);
 }
 
 export function actualizarAdminReporte(
   id: string,
   data: ReporteMensualFormData
 ): Promise<ReporteMensualResponse> {
-  return fetchAdmin(`${API}/reportes-mensuales/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  });
+  const reporte = actualizarReporte(id, formDataAReporte(data));
+  return Promise.resolve(
+    construirRespuesta(reporte, data, 'Reporte actualizado correctamente')
+  );
 }
 
 export function eliminarAdminReporte(id: string): Promise<{ mensaje: string }> {
-  return fetchAdmin(`${API}/reportes-mensuales/${id}`, {
-    method: 'DELETE',
-  });
+  eliminarReporte(id);
+  return Promise.resolve({ mensaje: 'Reporte eliminado' });
 }
