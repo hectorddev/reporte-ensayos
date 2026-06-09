@@ -35,10 +35,40 @@ function obtenerHoja_() {
   return hoja;
 }
 
-function filaDesdeReporte_(r) {
-  var fechas = (r.ensayos || []).map(function (e) {
-    return String(e.fecha).slice(0, 10);
+function may_(texto) {
+  return String(texto || '').toUpperCase();
+}
+
+/**
+ * Compacta fechas: solo los días, y la última de cada mes lleva -MM-AAAA.
+ * Ej: ['2026-06-01','2026-06-25'] -> "01, 25-06-2026".
+ */
+function fechasCompactas_(ensayos) {
+  var fechas = (ensayos || [])
+    .map(function (e) { return String(e.fecha).slice(0, 10); })
+    .filter(String)
+    .sort();
+
+  var grupos = [];
+  for (var i = 0; i < fechas.length; i++) {
+    var partes = fechas[i].split('-');
+    var anio = partes[0], mes = partes[1], dia = partes[2];
+    var ultimo = grupos[grupos.length - 1];
+    if (ultimo && ultimo.anio === anio && ultimo.mes === mes) {
+      ultimo.dias.push(dia);
+    } else {
+      grupos.push({ anio: anio, mes: mes, dias: [dia] });
+    }
+  }
+
+  return grupos.map(function (g) {
+    return g.dias.map(function (dia, idx) {
+      return idx === g.dias.length - 1 ? dia + '-' + g.mes + '-' + g.anio : dia;
+    }).join(', ');
   }).join(', ');
+}
+
+function filaDesdeReporte_(r) {
   var total =
     (r.totalNinos || 0) + (r.totalNinas || 0) +
     (r.totalAdolescentesFemeninas || 0) + (r.totalAdolescentesMasculinos || 0) +
@@ -47,11 +77,11 @@ function filaDesdeReporte_(r) {
 
   return [
     r.id,
-    nombreAgr,
+    may_(nombreAgr),
     r.anio,
-    MESES[r.mes - 1] || r.mes,
+    may_(MESES[r.mes - 1] || r.mes),
     (r.ensayos || []).length,
-    fechas,
+    fechasCompactas_(r.ensayos),
     r.totalNinos || 0,
     r.totalNinas || 0,
     r.totalAdolescentesFemeninas || 0,
@@ -59,8 +89,8 @@ function filaDesdeReporte_(r) {
     r.totalAdultosFemeninos || 0,
     r.totalAdultosMasculinos || 0,
     total,
-    (r.repertorioTexto || '').split('\n').filter(String).join(' | '),
-    r.observaciones || '',
+    may_((r.repertorioTexto || '').split('\n').filter(String).join(' | ')),
+    may_(r.observaciones || ''),
     r.createdAt || '',
     JSON.stringify(r),
   ];

@@ -1,10 +1,15 @@
 import { leerReportes } from './almacenamiento';
 import {
   MESES,
-  formatFechaIso,
+  fechasEnsayoCompactas,
   totalDesdeReporte,
   type ReporteMensualGuardado,
 } from '../features/reporte-mensual/types/reporteMensual.types';
+
+/** Texto en mayúscula (tolerante a null). */
+function may(texto: string | null | undefined): string {
+  return (texto ?? '').toUpperCase();
+}
 
 /** Nombre de hoja válido para Excel: máx 31 chars, sin caracteres prohibidos. */
 function nombreHojaValido(nombre: string): string {
@@ -12,12 +17,13 @@ function nombreHojaValido(nombre: string): string {
 }
 
 function filaDeReporte(reporte: ReporteMensualGuardado) {
+  const mes = MESES[reporte.mes - 1] ?? String(reporte.mes);
   return {
-    Periodo: `${MESES[reporte.mes - 1]} ${reporte.anio}`,
+    Periodo: may(`${mes} ${reporte.anio}`),
     Año: reporte.anio,
-    Mes: MESES[reporte.mes - 1],
+    Mes: may(mes),
     'N° Ensayos': reporte.ensayos.length,
-    'Fechas de ensayo': reporte.ensayos.map((e) => formatFechaIso(e.fecha)).join(', '),
+    'Fechas de ensayo': fechasEnsayoCompactas(reporte.ensayos.map((e) => e.fecha)),
     Niños: reporte.totalNinos,
     Niñas: reporte.totalNinas,
     'Adolescentes F': reporte.totalAdolescentesFemeninas,
@@ -25,8 +31,8 @@ function filaDeReporte(reporte: ReporteMensualGuardado) {
     'Adultos F': reporte.totalAdultosFemeninos,
     'Adultos M': reporte.totalAdultosMasculinos,
     'Total matrícula': totalDesdeReporte(reporte),
-    Repertorio: reporte.repertorioTexto?.split('\n').filter(Boolean).join(' | ') ?? '',
-    Observaciones: reporte.observaciones ?? '',
+    Repertorio: may(reporte.repertorioTexto?.split('\n').filter(Boolean).join(' | ')),
+    Observaciones: may(reporte.observaciones),
   };
 }
 

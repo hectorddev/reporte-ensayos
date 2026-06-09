@@ -119,6 +119,37 @@ export function ensayoAFechaIso(fecha: string): string {
   return `${anio}-${mes}-${dia}`;
 }
 
+/**
+ * Compacta una lista de fechas de ensayo: solo los días, y la última de cada
+ * mes lleva el sufijo -MM-AAAA. Ej: ['2026-06-01','2026-06-25'] -> "01, 25-06-2026".
+ * Si hay varios meses, agrupa por mes-año.
+ */
+export function fechasEnsayoCompactas(fechas: string[]): string {
+  const ordenadas = fechas
+    .map((f) => ensayoAFechaIso(f)) // normaliza a AAAA-MM-DD
+    .filter(Boolean)
+    .sort();
+
+  const grupos: { anio: string; mes: string; dias: string[] }[] = [];
+  for (const f of ordenadas) {
+    const [anio, mes, dia] = f.split('-');
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && ultimo.anio === anio && ultimo.mes === mes) {
+      ultimo.dias.push(dia);
+    } else {
+      grupos.push({ anio, mes, dias: [dia] });
+    }
+  }
+
+  return grupos
+    .map((g) =>
+      g.dias
+        .map((dia, i) => (i === g.dias.length - 1 ? `${dia}-${g.mes}-${g.anio}` : dia))
+        .join(', ')
+    )
+    .join(', ');
+}
+
 export function reporteToFormData(reporte: ReporteMensualGuardado): ReporteMensualFormData {
   return {
     agrupacionId: reporte.agrupacionId,
