@@ -24,4 +24,4 @@ export function buscarAgrupacion(id: string): Agrupacion | undefined {
 }
 
 /** Contraseña local del panel admin. No es seguridad real (visible en el código). */
-export const ADMIN_PASSWORD = 'admin123';
+export const ADMIN_PASSWORD = 'orquestatipica2008.';

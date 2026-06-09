@@ -50,10 +50,6 @@ export function AdminLogin({ onLogin }: Props) {
         <button type="submit" className="btn btn-primary" disabled={loading || !password}>
           {loading ? 'Verificando...' : 'Entrar'}
         </button>
-
-        <p className="admin-login-hint">
-          Desarrollo: contraseña por defecto <code>admin123</code>
-        </p>
       </form>
     </div>
   );
