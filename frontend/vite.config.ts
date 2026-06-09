@@ -41,9 +41,12 @@ function apiProxyFallback(): Plugin {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // En producción (build) se sirve bajo /reporte-ensayos/ en GitHub Pages.
+  // En dev se mantiene en la raíz para no romper el proxy local.
+  base: command === 'build' ? '/reporte-ensayos/' : '/',
   plugins: [react(), apiProxyFallback()],
   server: {
     port: 5173,
   },
-});
+}));
