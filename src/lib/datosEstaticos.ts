@@ -10,6 +10,7 @@ export const AGRUPACIONES: Agrupacion[] = [
   { id: 'DOPIM', codigo: 'DOPIM', nombre: 'DOPIM' },
   { id: 'RE_Y_MIPIM', codigo: 'RE_Y_MIPIM', nombre: 'RE Y MIPIM' },
   { id: 'PREPARATORIO_PIM', codigo: 'PREPARATORIO_PIM', nombre: 'PREPARATORIO PIM' },
+  { id: 'INICIACION_INSTRUMENTAL', codigo: 'INICIACION_INSTRUMENTAL', nombre: 'INICIACIÓN INSTRUMENTAL' },
   { id: 'PRE_INFANTIL_ETAPA_1', codigo: 'PRE_INFANTIL_ETAPA_1', nombre: 'PRE INFANTIL ETAPA 1' },
   { id: 'CORO_INFANTIL', codigo: 'CORO_INFANTIL', nombre: 'CORO INFANTIL' },
   { id: 'ALMA_LLANERA_NIVEL_I', codigo: 'ALMA_LLANERA_NIVEL_I', nombre: 'ALMA LLANERA NIVEL I' },
