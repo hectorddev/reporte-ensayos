@@ -418,6 +418,9 @@ input[type='date'],
 input[type='text'],
 input[type='number'],
 input[type='password'],
+input[type='time'],
+input[type='tel'],
+input[type='search'],
 textarea {
   width: 100%;
   padding: 0.6rem 0.75rem;
@@ -435,6 +438,9 @@ input[type='date']:focus,
 input[type='text']:focus,
 input[type='number']:focus,
 input[type='password']:focus,
+input[type='time']:focus,
+input[type='tel']:focus,
+input[type='search']:focus,
 textarea:focus {
   outline: none;
   border-color: #4f46e5;
@@ -934,5 +940,400 @@ textarea {
 @media (max-width: 380px) {
   .demografia-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ===========================================================
+   Constancias
+   =========================================================== */
+
+.constancia-form section {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.constancia-form h3 {
+  margin: 0 0 0.75rem;
+}
+
+.campos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.85rem 1rem;
+}
+
+.campo-ancho {
+  grid-column: 1 / -1;
+}
+
+.btn-bloque {
+  width: 100%;
+  padding: 0.85rem 1.2rem;
+  font-size: 1.05rem;
+}
+
+.tipos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.6rem;
+}
+
+.tipo-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.85rem 0.95rem;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  font-weight: 400;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.tipo-card input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tipo-card:has(input:focus-visible) {
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
+}
+
+.tipo-card.activo {
+  border-color: #4f46e5;
+  background: #eef2ff;
+}
+
+.tipo-card-titulo {
+  font-weight: 700;
+  color: #1e1b4b;
+}
+
+.tipo-card-desc {
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: #64748b;
+}
+
+.horario-filas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.horario-fila {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr 1.6fr auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.constancia-enviada {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.constancia-enviada h2 {
+  margin-top: 0;
+}
+
+.btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.75rem 0;
+  padding: 0.85rem 1.6rem;
+  background: #16a34a;
+  font-size: 1.05rem;
+}
+
+.btn-whatsapp:hover {
+  background: #15803d;
+}
+
+.constancia-enviada-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.estado-badge.pendiente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.estado-badge.aprobada {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.estado-badge.rechazada {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+h2 .estado-badge {
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.estado-badge.pendiente,
+.estado-badge.aprobada,
+.estado-badge.rechazada,
+.celda-codigo {
+  white-space: nowrap;
+}
+
+.reportes-filtros input[type='search'] {
+  flex: 2;
+}
+
+a.btn {
+  text-decoration: none;
+}
+
+.admin-header .app-nav {
+  margin-top: 0.85rem;
+}
+
+.revision-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.revision-vista {
+  position: sticky;
+  top: 1rem;
+}
+
+.revision-vista h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: #475569;
+}
+
+.constancia-form .panel-coordinacion {
+  border-color: #c7d2fe;
+  background: #f8faff;
+}
+
+.panel-coordinacion label {
+  margin-top: 0.85rem;
+}
+
+.panel-coordinacion h3 + label {
+  margin-top: 0;
+}
+
+.opciones-impresion {
+  margin: 0.9rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.opciones-impresion legend {
+  margin-bottom: 0.3rem;
+  padding: 0;
+  font-weight: 600;
+}
+
+.opciones-impresion label,
+.check-linea {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.3rem 0;
+  font-weight: 400;
+}
+
+.revision-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.nota-representante {
+  margin: 1rem 0 0;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #fffbeb;
+  font-size: 0.9rem;
+}
+
+/* ---------- Hoja de la constancia (carta) ---------- */
+
+.hoja-escalada {
+  width: 100%;
+  overflow: hidden;
+}
+
+.hoja-escalada-contenido {
+  width: 8.5in;
+}
+
+.constancia-hoja {
+  position: relative;
+  width: 8.5in;
+  min-height: 11in;
+  overflow: hidden;
+  background: #fff;
+  color: #000;
+  font-family: 'Times New Roman', Tinos, Times, serif;
+  font-size: 12pt;
+  line-height: 1.38;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.18);
+}
+
+.constancia-franja {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0.58in;
+  height: 100%;
+}
+
+.constancia-cuerpo {
+  padding: 0.12in 0.95in 0.31in 1.15in;
+}
+
+.constancia-logo {
+  display: block;
+  width: 0.78in;
+  margin: 0 auto 0.08in;
+  transform: translateX(0.1in);
+}
+
+.constancia-cuerpo p {
+  margin: 0;
+  text-align: justify;
+  text-indent: 0.5in;
+}
+
+.constancia-cuerpo .constancia-fecha {
+  margin-bottom: 0.1in;
+  text-align: right;
+  text-indent: 0;
+}
+
+.constancia-cuerpo .constancia-destinatario {
+  margin-bottom: 0.3in;
+  text-align: left;
+  text-indent: 0;
+}
+
+.constancia-tabla {
+  width: calc(100% - 0.85in);
+  margin: 0.22in 0 0 0.85in;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+.constancia-tabla th,
+.constancia-tabla td {
+  padding: 0.16in 0.08in;
+  border: 1px solid #bfbfbf;
+}
+
+.constancia-tabla th {
+  background: #f2f2f2;
+}
+
+/* Igual que el PDF: con más días, menos alto por fila. */
+.constancia-tabla.compacta th,
+.constancia-tabla.compacta td {
+  padding-top: 0.07in;
+  padding-bottom: 0.07in;
+}
+
+.constancia-tabla.muy-compacta th,
+.constancia-tabla.muy-compacta td {
+  padding-top: 0.04in;
+  padding-bottom: 0.04in;
+}
+
+.constancia-hoja.compacta .constancia-despedida {
+  margin-top: 0.14in;
+}
+
+.constancia-hoja.compacta .constancia-firma {
+  margin-top: 0.5in;
+}
+
+.constancia-finales {
+  margin-top: 0.25in;
+}
+
+.constancia-cuerpo .constancia-despedida {
+  margin-top: 0.2in;
+}
+
+.constancia-firma {
+  width: 3in;
+  margin: 0.72in auto 0;
+  transform: translateX(0.35in);
+  text-align: center;
+}
+
+
+.constancia-firma-linea {
+  border-top: 1px solid #000;
+}
+
+.constancia-cuerpo .constancia-firma p {
+  margin-top: 0.05in;
+  text-align: center;
+  text-indent: 0;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.constancia-codigo {
+  position: absolute;
+  right: 0.6in;
+  bottom: 0.3in;
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 8pt;
+  color: #6b7280;
+}
+
+@media (max-width: 960px) {
+  .revision-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .revision-vista {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .horario-fila {
+    grid-template-columns: 1fr 1fr;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .horario-fila select,
+  .horario-fila input[type='text'],
+  .horario-fila .btn {
+    grid-column: 1 / -1;
   }
 }

@@ -54,6 +54,9 @@ export function HomePage() {
           >
             Reportes guardados
           </button>
+          <Link to="/constancias" className="nav-btn nav-link">
+            Constancias
+          </Link>
           {adminVisible && (
             <Link to="/admin" className="nav-btn nav-link">
               Admin

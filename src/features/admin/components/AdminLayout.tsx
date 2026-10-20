@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { clearAdminPassword } from '../../../lib/adminAuth';
 
 export function AdminLayout() {
@@ -15,7 +15,18 @@ export function AdminLayout() {
       <header className="admin-header">
         <div>
           <h1>Panel de administración</h1>
-          <p>Gestiona y edita todos los reportes mensuales</p>
+          <p>Gestiona reportes mensuales y constancias</p>
+          <nav className="app-nav">
+            <NavLink to="/admin" end className={({ isActive }) => `nav-btn nav-link ${isActive ? 'activo' : ''}`}>
+              Reportes
+            </NavLink>
+            <NavLink
+              to="/admin/constancias"
+              className={({ isActive }) => `nav-btn nav-link ${isActive ? 'activo' : ''}`}
+            >
+              Constancias
+            </NavLink>
+          </nav>
         </div>
         <div className="admin-header-actions">
           <Link to="/" className="btn btn-secondary">
