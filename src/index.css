@@ -1062,6 +1062,130 @@ textarea {
   background: #15803d;
 }
 
+/* ---------- Plantillas ---------- */
+
+.constancia-form .plantilla-resumen,
+.revision-vista .plantilla-resumen {
+  border-color: #c7d2fe;
+  background: #f8faff;
+}
+
+.plantilla-resumen {
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+}
+
+.plantilla-resumen h3 {
+  margin: 0 0 0.25rem;
+}
+
+.plantilla-resumen dl {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.75rem 0 0;
+}
+
+.plantilla-resumen dl div {
+  display: grid;
+  grid-template-columns: minmax(90px, max-content) 1fr;
+  gap: 0.75rem;
+}
+
+.plantilla-resumen dt {
+  font-weight: 600;
+  color: #475569;
+}
+
+.plantilla-resumen dd {
+  margin: 0;
+}
+
+.plantillas-publicas h2 {
+  margin: 0 0 0.25rem;
+}
+
+.plantillas-lista {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.plantilla-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 1.1rem;
+  border: 1.5px solid #c7d2fe;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plantilla-card:hover {
+  border-color: #4f46e5;
+  background: #eef2ff;
+}
+
+.plantilla-card-libre {
+  border-style: dashed;
+  border-color: #cbd5e1;
+}
+
+.volver-plantillas {
+  margin-bottom: 0.75rem;
+}
+
+.plantilla-admin {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.plantilla-admin h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.plantilla-admin p {
+  margin: 0.2rem 0 0;
+}
+
+.plantilla-admin.vencida {
+  opacity: 0.6;
+}
+
+.enlace-plantilla {
+  margin-bottom: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #6ee7b7;
+  border-radius: 10px;
+  background: #ecfdf5;
+}
+
+.enlace-plantilla h3 {
+  margin: 0 0 0.6rem;
+  color: #065f46;
+}
+
+.enlace-plantilla input {
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.enlace-plantilla .admin-acciones {
+  flex-wrap: wrap;
+}
+
 .constancia-enviada-acciones {
   display: flex;
   flex-wrap: wrap;

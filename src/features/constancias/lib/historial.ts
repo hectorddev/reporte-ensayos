@@ -1,3 +1,4 @@
+import { escribirLista, guardarPrimero, leerLista } from './almacenLocal';
 import type { Constancia } from '../types/constancia.types';
 
 /**
@@ -9,31 +10,17 @@ const CLAVE_HISTORIAL = 'constancias_historial';
 const MAX_HISTORIAL = 500;
 
 export function leerHistorial(): Constancia[] {
-  try {
-    const lista = JSON.parse(localStorage.getItem(CLAVE_HISTORIAL) ?? '[]');
-    return Array.isArray(lista) ? lista : [];
-  } catch {
-    return [];
-  }
-}
-
-function escribir(lista: Constancia[]): void {
-  try {
-    localStorage.setItem(CLAVE_HISTORIAL, JSON.stringify(lista.slice(0, MAX_HISTORIAL)));
-  } catch {
-    // Sin almacenamiento disponible: la revisión funciona, pero no queda registrada.
-  }
+  return leerLista<Constancia>(CLAVE_HISTORIAL);
 }
 
 export function buscarEnHistorial(codigo: string): Constancia | undefined {
   return leerHistorial().find((c) => c.codigo === codigo);
 }
 
-/** Inserta o reemplaza por código; lo último revisado queda primero. */
 export function guardarEnHistorial(c: Constancia): void {
-  escribir([c, ...leerHistorial().filter((x) => x.codigo !== c.codigo)]);
+  guardarPrimero(CLAVE_HISTORIAL, c, (x) => x.codigo === c.codigo, MAX_HISTORIAL);
 }
 
 export function eliminarDelHistorial(codigo: string): void {
-  escribir(leerHistorial().filter((c) => c.codigo !== codigo));
+  escribirLista(CLAVE_HISTORIAL, leerHistorial().filter((c) => c.codigo !== codigo), MAX_HISTORIAL);
 }

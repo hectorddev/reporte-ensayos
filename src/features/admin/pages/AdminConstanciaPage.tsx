@@ -23,7 +23,7 @@ import {
   ESTADOS_CONSTANCIA,
   SOLICITUD_VACIA,
   datosDeSolicitud,
-  limpiarSegunTipo,
+  limpiarSolicitud,
   tituloTipo,
   type Constancia,
   type DatosSolicitud,
@@ -124,13 +124,13 @@ function RevisionConstancia({ inicial, esNueva }: RevisionProps) {
   const [aviso, setAviso] = useState<string | null>(null);
   const compartir = puedeCompartirArchivos();
 
-  const datos = limpiarSegunTipo(form.watch());
+  const datos = limpiarSolicitud(form.watch());
   // El PDF generado deja de servir si se edita algo que sale impreso.
   const huella = JSON.stringify([datos, parrafoAdicional, fechaEmision]);
   const pdfVigente = pdf && pdf.huella === huella ? pdf : null;
   const actual = (nuevoEstado: EstadoConstancia): Constancia => ({
     ...inicial,
-    ...limpiarSegunTipo(form.getValues()),
+    ...limpiarSolicitud(form.getValues()),
     estado: nuevoEstado,
     fechaEmision,
     parrafoAdicional,
@@ -217,7 +217,7 @@ function RevisionConstancia({ inicial, esNueva }: RevisionProps) {
           {!esNueva && (
             <p className="fechas-ayuda">
               Solicitada el {fechaLegible(inicial.creadoEn)}
-              {inicial.representanteNombre && ` por ${inicial.representanteNombre}`} ·{' '}
+              {` por ${inicial.representanteNombre || inicial.estudianteNombre}`} ·{' '}
               <span className={`estado-badge ${estado}`}>{ESTADOS_CONSTANCIA[estado]}</span>
             </p>
           )}

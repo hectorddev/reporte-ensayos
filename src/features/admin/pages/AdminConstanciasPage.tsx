@@ -39,9 +39,14 @@ export function AdminConstanciasPage() {
         <h2>
           Constancias {pendientes > 0 && <span className="estado-badge pendiente">{pendientes} por revisar</span>}
         </h2>
-        <Link to="/admin/constancias/nueva" className="btn btn-primary">
-          Nueva constancia
-        </Link>
+        <div className="admin-acciones">
+          <Link to="/admin/constancias/plantillas" className="btn btn-secondary">
+            Plantillas
+          </Link>
+          <Link to="/admin/constancias/nueva" className="btn btn-primary">
+            Nueva constancia
+          </Link>
+        </div>
       </div>
 
       <p className="fechas-ayuda">

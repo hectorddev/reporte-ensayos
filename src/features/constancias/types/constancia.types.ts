@@ -1,7 +1,8 @@
+import { esMenorDeEdad } from '../lib/textoConstancia';
+
 export type TipoConstancia = 'horario' | 'pertenencia' | 'concierto' | 'jornada' | 'ensayo';
 export type EstadoConstancia = 'pendiente' | 'aprobada' | 'rechazada';
 export type Genero = 'M' | 'F';
-export type SituacionEscolar = 'cursa' | 'proximo';
 
 export const TIPOS_CONSTANCIA: { id: TipoConstancia; titulo: string; descripcion: string }[] = [
   {
@@ -50,7 +51,11 @@ export interface FilaHorario {
   actividad: string;
 }
 
-/** Lo que llena el representante. Las fechas van en AAAA-MM-DD. */
+/**
+ * Lo que llena quien solicita. Las fechas van en AAAA-MM-DD.
+ * Nombre y cédula del representante solo aplican si el estudiante es menor de
+ * edad; el teléfono siempre es el contacto para responder por WhatsApp.
+ */
 export interface DatosSolicitud {
   tipo: TipoConstancia;
   representanteNombre: string;
@@ -63,9 +68,6 @@ export interface DatosSolicitud {
   agrupacionId: string;
   agrupacionNombre: string;
   instrumento: string;
-  escolaridadSituacion: SituacionEscolar;
-  escolaridadGrado: string;
-  escolaridadAnioLectivo: string;
   destinatario: string;
   // Horario
   horario: FilaHorario[];
@@ -104,6 +106,51 @@ export interface Solicitud extends DatosSolicitud {
   creadoEn: string; // ISO
 }
 
+/**
+ * Campos que fija la coordinación en una plantilla (fecha, días, horas, lugar…).
+ * Quien solicita solo llena sus datos personales.
+ */
+export const CAMPOS_PLANTILLA = [
+  'tipo',
+  'agrupacionId',
+  'agrupacionNombre',
+  'horario',
+  'eventoNombre',
+  'fecha',
+  'fechaFin',
+  'horaInicio',
+  'horaFin',
+  'lugar',
+] as const satisfies readonly (keyof DatosSolicitud)[];
+
+export type DatosPlantilla = Pick<DatosSolicitud, (typeof CAMPOS_PLANTILLA)[number]>;
+
+export interface Plantilla {
+  codigo: string; // PL26-XXXXXX
+  titulo: string;
+  creadoEn: string;
+  datos: DatosPlantilla;
+}
+
+/** Toma de una solicitud (ya limpia) solo lo que fija la plantilla. */
+export function datosDePlantilla(d: DatosSolicitud): DatosPlantilla {
+  const limpio = limpiarSolicitud(d);
+  return Object.fromEntries(CAMPOS_PLANTILLA.map((c) => [c, limpio[c]])) as DatosPlantilla;
+}
+
+/**
+ * Impone los datos de la plantilla sobre lo que llenó la persona. La agrupación
+ * solo se impone si la plantilla la fijó.
+ */
+export function aplicarPlantilla(d: DatosSolicitud, p: Plantilla): DatosSolicitud {
+  const { agrupacionId, agrupacionNombre, ...resto } = p.datos;
+  return {
+    ...d,
+    ...resto,
+    ...(agrupacionId ? { agrupacionId, agrupacionNombre } : {}),
+  };
+}
+
 /** representante: se le envía el PDF; coordinacion: la imprime y la entrega. */
 export type EntregaConstancia = 'representante' | 'coordinacion';
 
@@ -136,9 +183,6 @@ export const SOLICITUD_VACIA: DatosSolicitud = {
   agrupacionId: '',
   agrupacionNombre: '',
   instrumento: '',
-  escolaridadSituacion: 'cursa',
-  escolaridadGrado: '',
-  escolaridadAnioLectivo: '',
   destinatario: '',
   horario: [FILA_HORARIO_VACIA],
   fechaIngreso: '',
@@ -151,11 +195,17 @@ export const SOLICITUD_VACIA: DatosSolicitud = {
   notas: '',
 };
 
-/** Vacía los campos que no aplican al tipo elegido (p. ej. tras cambiar de tipo). */
-export function limpiarSegunTipo(d: DatosSolicitud): DatosSolicitud {
+/**
+ * Vacía los campos que no aplican: los del tipo no elegido (p. ej. tras cambiar
+ * de tipo) y los del representante si el estudiante es mayor de edad.
+ */
+export function limpiarSolicitud(d: DatosSolicitud): DatosSolicitud {
   const evento = d.tipo === 'concierto' || d.tipo === 'jornada' || d.tipo === 'ensayo';
+  const menor = esMenorDeEdad(d.estudianteFechaNacimiento);
   return {
     ...d,
+    representanteNombre: menor ? d.representanteNombre : '',
+    representanteCedula: menor ? d.representanteCedula : '',
     horario: d.tipo === 'horario' ? d.horario : [],
     fechaIngreso: d.tipo === 'pertenencia' ? d.fechaIngreso : '',
     eventoNombre: d.tipo === 'concierto' || d.tipo === 'jornada' ? d.eventoNombre : '',
@@ -186,7 +236,6 @@ export function datosDeSolicitud(origen: Record<string, unknown>): DatosSolicitu
   }
   if (!TIPOS_VALIDOS.has(String(datos.tipo))) datos.tipo = SOLICITUD_VACIA.tipo;
   if (datos.estudianteGenero !== 'F') datos.estudianteGenero = 'M';
-  if (datos.escolaridadSituacion !== 'proximo') datos.escolaridadSituacion = 'cursa';
 
   const filas = Array.isArray(origen.horario) ? origen.horario : [];
   datos.horario = filas.slice(0, MAX_FILAS_HORARIO).map((f) => {

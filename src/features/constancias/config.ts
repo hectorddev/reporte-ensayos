@@ -6,10 +6,10 @@ import type { Firmante } from './types/constancia.types';
  */
 
 /**
- * WhatsApp de la coordinación, con código de país y sin signos: 584141234567.
- * Vacío: WhatsApp le pide al representante elegir el contacto.
+ * WhatsApp de la coordinación. Sirve formato local (0414-1234567) o
+ * internacional (584141234567). Vacío: WhatsApp pide elegir el contacto.
  */
-export const WHATSAPP_COORDINACION = '';
+export const WHATSAPP_COORDINACION = '0424-7218061';
 
 /** Quien firma las constancias (texto del documento). La firma va a mano. */
 export const FIRMANTE: Firmante = {

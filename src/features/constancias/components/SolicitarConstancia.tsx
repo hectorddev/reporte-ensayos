@@ -6,8 +6,10 @@ import { codificarSolicitud, enlaceRevision, generarCodigo } from '../lib/enlace
 import { enlaceWhatsApp, mensajeSolicitud } from '../lib/utilidades';
 import {
   SOLICITUD_VACIA,
-  limpiarSegunTipo,
+  aplicarPlantilla,
+  limpiarSolicitud,
   type DatosSolicitud,
+  type Plantilla,
 } from '../types/constancia.types';
 
 interface Preparada {
@@ -16,12 +18,18 @@ interface Preparada {
   mensaje: string;
 }
 
+interface Props {
+  /** Con plantilla, la coordinación ya fijó tipo, fechas, horas y lugar. */
+  plantilla?: Plantilla | null;
+}
+
 /**
  * El representante llena los datos; la app arma un mensaje con un enlace que
  * contiene la solicitud y lo envía por WhatsApp a la coordinación.
  */
-export function SolicitarConstancia() {
-  const form = useForm<DatosSolicitud>({ defaultValues: SOLICITUD_VACIA });
+export function SolicitarConstancia({ plantilla = null }: Props) {
+  const iniciales = plantilla ? aplicarPlantilla(SOLICITUD_VACIA, plantilla) : SOLICITUD_VACIA;
+  const form = useForm<DatosSolicitud>({ defaultValues: iniciales });
   const [preparada, setPreparada] = useState<Preparada | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
@@ -29,7 +37,9 @@ export function SolicitarConstancia() {
   const onSubmit = async (datos: DatosSolicitud) => {
     setError(null);
     try {
-      const solicitud = { ...limpiarSegunTipo(datos), codigo: generarCodigo(), creadoEn: new Date().toISOString() };
+      // La plantilla manda sobre lo fijo, aunque el formulario lo haya cambiado.
+      const completos = plantilla ? aplicarPlantilla(datos, plantilla) : datos;
+      const solicitud = { ...limpiarSolicitud(completos), codigo: generarCodigo(), creadoEn: new Date().toISOString() };
       const mensaje = mensajeSolicitud(solicitud, enlaceRevision(await codificarSolicitud(solicitud)));
       setPreparada({ codigo: solicitud.codigo, mensaje, whatsapp: enlaceWhatsApp(WHATSAPP_COORDINACION, mensaje) });
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -41,7 +51,7 @@ export function SolicitarConstancia() {
   // Conserva los datos del representante para pedir otra (p. ej. un hermano).
   const otraSolicitud = () => {
     const { representanteNombre, representanteCedula, representanteTelefono } = form.getValues();
-    form.reset({ ...SOLICITUD_VACIA, representanteNombre, representanteCedula, representanteTelefono });
+    form.reset({ ...iniciales, representanteNombre, representanteCedula, representanteTelefono });
     setPreparada(null);
     setCopiado(false);
   };
@@ -86,7 +96,7 @@ export function SolicitarConstancia() {
 
   return (
     <form className="constancia-form" onSubmit={form.handleSubmit(onSubmit)} noValidate>
-      <CamposSolicitud form={form} modo="representante" />
+      <CamposSolicitud form={form} modo="representante" plantilla={plantilla} />
 
       {error && <div className="alert-error">{error}</div>}
 

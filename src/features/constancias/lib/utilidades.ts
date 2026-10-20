@@ -1,4 +1,5 @@
-import { tituloTipo, type Constancia, type Solicitud } from '../types/constancia.types';
+import { describirPlantilla, tituloPlantilla } from './plantillas';
+import { tituloTipo, type Constancia, type Plantilla, type Solicitud } from '../types/constancia.types';
 
 /** Teléfono venezolano a formato internacional para wa.me: 0414-1234567 → 584141234567. */
 function telefonoWhatsApp(telefono: string): string {
@@ -18,15 +19,30 @@ export function mensajeSolicitud(s: Solicitud, enlace: string): string {
   return [
     `Solicitud de constancia ${s.codigo}: ${tituloTipo(s.tipo)}`,
     `Estudiante: ${s.estudianteNombre}`,
-    `Representante: ${s.representanteNombre} (${s.representanteTelefono})`,
+    s.representanteNombre
+      ? `Representante: ${s.representanteNombre} (${s.representanteTelefono})`
+      : `Contacto: ${s.representanteTelefono} (estudiante mayor de edad)`,
     '',
     `Abrir para revisar: ${enlace}`,
   ].join('\n');
 }
 
-/** Aviso de la coordinación al representante según la decisión. */
+/** Mensaje para compartir una plantilla en un grupo de WhatsApp. */
+export function mensajePlantilla(p: Plantilla, enlace: string): string {
+  const detalles = describirPlantilla(p.datos)
+    .slice(1)
+    .map((l) => `${l.etiqueta}: ${l.valor}`);
+  return [
+    `Constancia: ${tituloPlantilla(p)}`,
+    ...detalles,
+    '',
+    `Si necesitas la constancia, llena tus datos aquí: ${enlace}`,
+  ].join('\n');
+}
+
+/** Aviso de la coordinación al solicitante (representante, o el estudiante si es mayor). */
 export function mensajeParaRepresentante(c: Constancia): string {
-  const saludo = `Hola ${c.representanteNombre}.`;
+  const saludo = `Hola ${c.representanteNombre || c.estudianteNombre}.`;
   if (c.estado === 'rechazada') {
     const motivo = c.motivoRechazo ? `: ${c.motivoRechazo}` : '.';
     return `${saludo} La solicitud de constancia ${c.codigo} de ${c.estudianteNombre} no pudo ser aprobada${motivo}`;

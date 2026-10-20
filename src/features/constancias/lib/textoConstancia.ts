@@ -119,6 +119,15 @@ export function calcularEdad(nacimiento: string, referencia: string): number | n
   return edad >= 0 ? edad : null;
 }
 
+/**
+ * ¿Necesita representante? Sin fecha de nacimiento se asume que sí (la mayoría
+ * de integrantes son niños y adolescentes).
+ */
+export function esMenorDeEdad(nacimiento: string, referencia: string = hoyIso()): boolean {
+  const edad = calcularEdad(nacimiento, referencia);
+  return edad === null || edad < 18;
+}
+
 /* ---------------- Contenido ---------------- */
 
 export interface Segmento {
@@ -197,25 +206,25 @@ export function construirContenido(
   }
   suscribe.push(texto('.'));
 
-  // 2. Hago constar
-  let constar = `Por medio de la presente hago constar que ${sustantivo}, ${c.estudianteNombre.trim()}`;
-  if (edad !== null) constar += `, de ${edad} ${edad === 1 ? 'año' : 'años'} de edad`;
+  // 2. Hago constar (nombre y cédula del estudiante en negrita)
+  const constar: Parrafo = [
+    texto(`Por medio de la presente hago constar que ${sustantivo}, `),
+    { texto: c.estudianteNombre.trim(), negrita: true },
+  ];
+  let resto = '';
+  if (edad !== null) resto += `, de ${edad} ${edad === 1 ? 'año' : 'años'} de edad`;
   if (c.estudianteCedula.trim()) {
-    constar += `, ${fem ? 'portadora' : 'portador'} de la Cédula de Identidad N° ${c.estudianteCedula.trim()}`;
+    constar.push(
+      texto(`${resto}, ${fem ? 'portadora' : 'portador'} de la Cédula de Identidad N° `),
+      { texto: c.estudianteCedula.trim(), negrita: true }
+    );
+    resto = '';
   }
-  if (c.escolaridadGrado.trim()) {
-    constar +=
-      c.escolaridadSituacion === 'proximo'
-        ? `, y ${fem ? 'próxima' : 'próximo'} a cursar el ${c.escolaridadGrado.trim()}`
-        : `, y cursante del ${c.escolaridadGrado.trim()}`;
-    if (c.escolaridadAnioLectivo.trim()) {
-      constar += ` durante el año lectivo ${c.escolaridadAnioLectivo.trim()}`;
-    }
-  }
-  constar += ', es miembro activo y regular de nuestra institución, ';
-  constar += c.instrumento.trim()
+  resto += ', es miembro activo y regular de nuestra institución, ';
+  resto += c.instrumento.trim()
     ? `desempeñándose en la fila de ${c.instrumento.trim()} en la agrupación ${agrupacion}.`
     : `integrando la agrupación ${agrupacion}.`;
+  constar.push(texto(resto));
 
   // 3. Según el tipo
   const asimismo = `Asimismo, se hace constar que ${integrante} `;
@@ -226,11 +235,10 @@ export function construirContenido(
 
   switch (c.tipo) {
     case 'horario': {
-      const periodo = c.escolaridadAnioLectivo.trim() ? ' del mencionado periodo' : '';
       especifico =
         'Asimismo, se certifica y hace de conocimiento de las autoridades competentes que, ' +
         'para el cabal cumplimiento de su formación musical y su participación en los ensayos ' +
-        `generales, seccionales y compromisos artísticos${periodo}, ${integrante} deberá regirse ` +
+        `generales, seccionales y compromisos artísticos, ${integrante} deberá regirse ` +
         'de manera estricta por el siguiente esquema de horarios:';
       tabla = c.horario;
       break;
@@ -292,7 +300,7 @@ export function construirContenido(
     destinatario: c.destinatario.trim()
       ? [...c.destinatario.trim().split('\n'), 'Su despacho. -']
       : ['A quien pueda interesar'],
-    parrafos: [suscribe, [texto(constar)], [texto(especifico)]],
+    parrafos: [suscribe, constar, [texto(especifico)]],
     tabla,
     parrafosFinales: [
       ...adicionales,
