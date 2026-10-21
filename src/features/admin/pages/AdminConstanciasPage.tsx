@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AdminLogin } from '../components/AdminLogin';
-import { isAdminAuthenticated } from '../../../lib/adminAuth';
-import { leerHistorial } from '../../constancias/lib/historial';
+import { useQuery } from '@tanstack/react-query';
+import { AccesoCoordinacion } from '../components/AccesoCoordinacion';
+import { listarPlantillas, listarSolicitudes } from '../../constancias/api/constancias.api';
+import { tituloPlantilla } from '../../constancias/lib/plantillas';
 import { fechaLegible } from '../../constancias/lib/textoConstancia';
 import {
   ESTADOS_CONSTANCIA,
@@ -13,25 +14,36 @@ import {
 type Filtro = EstadoConstancia | 'todas';
 
 export function AdminConstanciasPage() {
-  const [autenticado, setAutenticado] = useState(isAdminAuthenticated());
-  const [filtro, setFiltro] = useState<Filtro>('todas');
+  return <AccesoCoordinacion>{(clave) => <Bandeja clave={clave} />}</AccesoCoordinacion>;
+}
+
+function Bandeja({ clave }: { clave: string }) {
+  const [filtro, setFiltro] = useState<Filtro>('pendiente');
+  const [plantilla, setPlantilla] = useState('');
   const [busqueda, setBusqueda] = useState('');
 
-  if (!autenticado) {
-    return <AdminLogin onLogin={() => setAutenticado(true)} />;
-  }
+  const solicitudes = useQuery({
+    queryKey: ['admin-constancias'],
+    queryFn: () => listarSolicitudes(clave),
+  });
+  const plantillas = useQuery({
+    queryKey: ['admin-plantillas'],
+    queryFn: () => listarPlantillas(clave),
+  });
 
-  const constancias = leerHistorial();
+  const constancias = solicitudes.data ?? [];
   const texto = busqueda.trim().toLowerCase();
   const visibles = constancias.filter(
     (c) =>
       (filtro === 'todas' || c.estado === filtro) &&
+      (!plantilla || c.plantilla === plantilla) &&
       (!texto ||
         c.codigo.toLowerCase().includes(texto) ||
         c.estudianteNombre.toLowerCase().includes(texto) ||
         c.representanteNombre.toLowerCase().includes(texto))
   );
   const pendientes = constancias.filter((c) => c.estado === 'pendiente').length;
+  const nombrePlantilla = new Map((plantillas.data ?? []).map((p) => [p.codigo, tituloPlantilla(p)]));
 
   return (
     <div className="admin-dashboard">
@@ -40,6 +52,14 @@ export function AdminConstanciasPage() {
           Constancias {pendientes > 0 && <span className="estado-badge pendiente">{pendientes} por revisar</span>}
         </h2>
         <div className="admin-acciones">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => solicitudes.refetch()}
+            disabled={solicitudes.isFetching}
+          >
+            {solicitudes.isFetching ? 'Actualizando…' : 'Actualizar'}
+          </button>
           <Link to="/admin/constancias/plantillas" className="btn btn-secondary">
             Plantillas
           </Link>
@@ -49,21 +69,20 @@ export function AdminConstanciasPage() {
         </div>
       </div>
 
-      <p className="fechas-ayuda">
-        Las solicitudes llegan por WhatsApp: abre el enlace del mensaje para revisarla. Aquí queda
-        el historial de las que abriste en este dispositivo.
-      </p>
-
       <div className="reportes-filtros">
-        <select
-          value={filtro}
-          onChange={(e) => setFiltro(e.target.value as Filtro)}
-          aria-label="Filtrar por estado"
-        >
-          <option value="todas">Todas</option>
+        <select value={filtro} onChange={(e) => setFiltro(e.target.value as Filtro)} aria-label="Filtrar por estado">
           <option value="pendiente">{ESTADOS_CONSTANCIA.pendiente}</option>
           <option value="aprobada">Aprobadas</option>
           <option value="rechazada">Rechazadas</option>
+          <option value="todas">Todas</option>
+        </select>
+        <select value={plantilla} onChange={(e) => setPlantilla(e.target.value)} aria-label="Filtrar por plantilla">
+          <option value="">Todas las plantillas</option>
+          {(plantillas.data ?? []).map((p) => (
+            <option key={p.codigo} value={p.codigo}>
+              {tituloPlantilla(p)}
+            </option>
+          ))}
         </select>
         <input
           type="search"
@@ -74,11 +93,20 @@ export function AdminConstanciasPage() {
         />
       </div>
 
-      {visibles.length === 0 ? (
-        <div className="reportes-vacio">
-          <p>{constancias.length === 0 ? 'Aún no hay constancias en este dispositivo.' : 'Ninguna coincide con el filtro.'}</p>
+      {solicitudes.isLoading && <p>Cargando constancias…</p>}
+      {solicitudes.error && (
+        <div className="alert-error">
+          {solicitudes.error instanceof Error ? solicitudes.error.message : 'No se pudieron cargar las constancias.'}
         </div>
-      ) : (
+      )}
+
+      {!solicitudes.isLoading && !solicitudes.error && visibles.length === 0 && (
+        <div className="reportes-vacio">
+          <p>{constancias.length === 0 ? 'Aún no hay solicitudes.' : 'Ninguna coincide con el filtro.'}</p>
+        </div>
+      )}
+
+      {visibles.length > 0 && (
         <div className="reportes-tabla-wrap">
           <table className="reportes-tabla">
             <thead>
@@ -97,7 +125,12 @@ export function AdminConstanciasPage() {
                 <tr key={c.codigo}>
                   <td className="celda-codigo"><strong>{c.codigo}</strong></td>
                   <td>{fechaLegible(c.creadoEn)}</td>
-                  <td>{tituloTipo(c.tipo)}</td>
+                  <td>
+                    {tituloTipo(c.tipo)}
+                    {c.plantilla && nombrePlantilla.has(c.plantilla) && (
+                      <span className="celda-plantilla">{nombrePlantilla.get(c.plantilla)}</span>
+                    )}
+                  </td>
                   <td>{c.estudianteNombre}</td>
                   <td>{c.agrupacionNombre}</td>
                   <td>

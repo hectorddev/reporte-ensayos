@@ -1,53 +1,44 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AdminLogin } from '../components/AdminLogin';
-import { isAdminAuthenticated } from '../../../lib/adminAuth';
-import { codificarPlantilla, enlacePlantilla } from '../../constancias/lib/enlaceSolicitud';
-import {
-  describirPlantilla,
-  eliminarPlantilla,
-  leerPlantillas,
-  plantillaVigente,
-  tituloPlantilla,
-} from '../../constancias/lib/plantillas';
-import { enlaceWhatsApp, mensajePlantilla } from '../../constancias/lib/utilidades';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AccesoCoordinacion } from '../components/AccesoCoordinacion';
+import { eliminarPlantilla, listarPlantillas } from '../../constancias/api/constancias.api';
+import { resumenPlantilla, tituloPlantilla } from '../../constancias/lib/plantillas';
+import { enlacePlantilla, enlaceWhatsApp, mensajePlantilla } from '../../constancias/lib/utilidades';
 import type { Plantilla } from '../../constancias/types/constancia.types';
 
-/** Plantillas creadas en este dispositivo, con su enlace para compartir. */
 export function AdminPlantillasPage() {
-  const [autenticado, setAutenticado] = useState(isAdminAuthenticated());
-  const [plantillas, setPlantillas] = useState<Plantilla[]>(() => leerPlantillas());
-  const [enlaces, setEnlaces] = useState<Record<string, string>>({});
+  return <AccesoCoordinacion>{(clave) => <ListaPlantillas clave={clave} />}</AccesoCoordinacion>;
+}
+
+function ListaPlantillas({ clave }: { clave: string }) {
+  const queryClient = useQueryClient();
   const [copiado, setCopiado] = useState<string | null>(null);
-
-  // Los enlaces se calculan antes: copiar/compartir deben ocurrir directo en el clic.
-  useEffect(() => {
-    let vigente = true;
-    Promise.all(plantillas.map(async (p) => [p.codigo, enlacePlantilla(await codificarPlantilla(p))] as const)).then(
-      (pares) => vigente && setEnlaces(Object.fromEntries(pares))
-    );
-    return () => {
-      vigente = false;
-    };
-  }, [plantillas]);
-
-  if (!autenticado) {
-    return <AdminLogin onLogin={() => setAutenticado(true)} />;
-  }
+  const [error, setError] = useState<string | null>(null);
+  const { data: plantillas = [], isLoading, error: errorCarga } = useQuery({
+    queryKey: ['admin-plantillas'],
+    queryFn: () => listarPlantillas(clave),
+  });
 
   const copiar = async (p: Plantilla) => {
+    const enlace = enlacePlantilla(p.codigo);
     try {
-      await navigator.clipboard.writeText(enlaces[p.codigo]);
+      await navigator.clipboard.writeText(enlace);
       setCopiado(p.codigo);
     } catch {
-      window.prompt('Copia el enlace:', enlaces[p.codigo]);
+      window.prompt('Copia el enlace:', enlace);
     }
   };
 
-  const eliminar = (p: Plantilla) => {
-    if (!window.confirm(`¿Eliminar la plantilla «${tituloPlantilla(p)}»? Los enlaces ya compartidos seguirán abriendo.`)) return;
-    eliminarPlantilla(p.codigo);
-    setPlantillas(leerPlantillas());
+  const eliminar = async (p: Plantilla) => {
+    if (!window.confirm(`¿Eliminar la plantilla «${tituloPlantilla(p)}»? Su enlace dejará de funcionar.`)) return;
+    setError(null);
+    try {
+      await eliminarPlantilla(p.codigo, clave);
+      await queryClient.invalidateQueries({ queryKey: ['admin-plantillas'] });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar.');
+    }
   };
 
   return (
@@ -57,8 +48,8 @@ export function AdminPlantillasPage() {
           <Link to="/admin/constancias" className="admin-back-link">← Volver a constancias</Link>
           <h2>Plantillas de constancias</h2>
           <p className="fechas-ayuda">
-            Fija tipo, fechas, días, horas y lugar una sola vez y comparte el enlace (por ejemplo, en el
-            grupo de la agrupación). Cada persona solo llena sus datos personales.
+            Fija tipo, fechas, días, horas y lugar una sola vez. Las vigentes aparecen al entrar a
+            /constancias, y puedes compartir su enlace corto en el grupo de la agrupación.
           </p>
         </div>
         <Link to="/admin/constancias/plantillas/nueva" className="btn btn-primary">
@@ -66,52 +57,49 @@ export function AdminPlantillasPage() {
         </Link>
       </div>
 
-      {plantillas.length === 0 ? (
-        <div className="reportes-vacio">
-          <p>Aún no hay plantillas en este dispositivo.</p>
-        </div>
-      ) : (
-        <div className="plantillas-lista">
-          {plantillas.map((p) => {
-            const enlace = enlaces[p.codigo];
-            return (
-              <article key={p.codigo} className={`plantilla-admin ${plantillaVigente(p) ? '' : 'vencida'}`}>
-                <div>
-                  <h3>{tituloPlantilla(p)}</h3>
-                  <p className="fechas-ayuda">
-                    {describirPlantilla(p.datos)
-                      .slice(1)
-                      .map((l) => l.valor)
-                      .join(' · ')}
-                    {!plantillaVigente(p) && ' · Vencida: ya no se muestra a los representantes'}
-                  </p>
-                </div>
-                <div className="admin-acciones">
-                  {enlace && (
-                    <a
-                      className="btn btn-primary btn-sm"
-                      href={enlaceWhatsApp('', mensajePlantilla(p, enlace))}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Compartir por WhatsApp
-                    </a>
-                  )}
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => copiar(p)} disabled={!enlace}>
-                    {copiado === p.codigo ? 'Copiado ✓' : 'Copiar enlace'}
-                  </button>
-                  <Link to={`/admin/constancias/plantillas/${p.codigo}`} className="btn btn-secondary btn-sm">
-                    Editar
-                  </Link>
-                  <button type="button" className="btn btn-danger btn-sm" onClick={() => eliminar(p)}>
-                    Eliminar
-                  </button>
-                </div>
-              </article>
-            );
-          })}
+      {(error || errorCarga) && (
+        <div className="alert-error">
+          {error ?? (errorCarga instanceof Error ? errorCarga.message : 'No se pudieron cargar las plantillas.')}
         </div>
       )}
+      {isLoading && <p>Cargando plantillas…</p>}
+
+      {!isLoading && plantillas.length === 0 && !errorCarga && (
+        <div className="reportes-vacio">
+          <p>Aún no hay plantillas.</p>
+        </div>
+      )}
+
+      <div className="plantillas-lista">
+        {plantillas.map((p) => (
+          <article key={p.codigo} className="plantilla-admin">
+            <div>
+              <h3>{tituloPlantilla(p)}</h3>
+              <p className="fechas-ayuda">{resumenPlantilla(p)}</p>
+              <p className="fechas-ayuda enlace-corto">{enlacePlantilla(p.codigo)}</p>
+            </div>
+            <div className="admin-acciones">
+              <a
+                className="btn btn-primary btn-sm"
+                href={enlaceWhatsApp('', mensajePlantilla(p))}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Compartir por WhatsApp
+              </a>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => copiar(p)}>
+                {copiado === p.codigo ? 'Copiado ✓' : 'Copiar enlace'}
+              </button>
+              <Link to={`/admin/constancias/plantillas/${p.codigo}`} className="btn btn-secondary btn-sm">
+                Editar
+              </Link>
+              <button type="button" className="btn btn-danger btn-sm" onClick={() => eliminar(p)}>
+                Eliminar
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
     </div>
   );
 }

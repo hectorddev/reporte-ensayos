@@ -35,12 +35,12 @@ export function ConstanciaDocumento({ datos, codigo, firmante, fechaEmision }: P
 
   return (
     <article className={`constancia-hoja ${esCompacta(contenido) ? 'compacta' : ''}`}>
-      <img className="constancia-franja" src={`${BASE}constancias/franja-lateral.png`} alt="" />
+      <img className="constancia-franja" src={`${BASE}img/constancias/franja-lateral.png`} alt="" />
 
       <div className="constancia-cuerpo">
         <img
           className="constancia-logo"
-          src={`${BASE}constancias/logo-alma-llanera.png`}
+          src={`${BASE}img/constancias/logo-alma-llanera.png`}
           alt="El Sistema — Programa Alma Llanera"
         />
 

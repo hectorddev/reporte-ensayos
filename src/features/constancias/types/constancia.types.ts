@@ -100,10 +100,12 @@ export interface Firmante {
   ciudad: string;
 }
 
-/** Lo que viaja en el enlace de WhatsApp del representante a la coordinación. */
+/** Solicitud guardada en el servicio de constancias. */
 export interface Solicitud extends DatosSolicitud {
   codigo: string;
   creadoEn: string; // ISO
+  /** Código de la plantilla de la que salió, si aplica. */
+  plantilla?: string;
 }
 
 /**

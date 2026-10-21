@@ -1,17 +1,12 @@
-import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { AdminLogin } from '../components/AdminLogin';
-import { isAdminAuthenticated } from '../../../lib/adminAuth';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AccesoCoordinacion } from '../components/AccesoCoordinacion';
 import { CamposSolicitud } from '../../constancias/components/CamposSolicitud';
 import { ConstanciaDocumento, HojaEscalada } from '../../constancias/components/ConstanciaDocumento';
 import { FIRMANTE } from '../../constancias/config';
-import { decodificarSolicitud, generarCodigo, solicitudDelHash } from '../../constancias/lib/enlaceSolicitud';
-import {
-  buscarEnHistorial,
-  eliminarDelHistorial,
-  guardarEnHistorial,
-} from '../../constancias/lib/historial';
+import { eliminarSolicitud, guardarSolicitud, listarSolicitudes } from '../../constancias/api/constancias.api';
 import { fechaLegible, hoyIso } from '../../constancias/lib/textoConstancia';
 import { enlaceWhatsApp, mensajeParaRepresentante, nombreArchivoPdf } from '../../constancias/lib/utilidades';
 import {
@@ -29,100 +24,77 @@ import {
   type DatosSolicitud,
   type EntregaConstancia,
   type EstadoConstancia,
-  type Solicitud,
 } from '../../constancias/types/constancia.types';
 
-type Origen = 'enlace' | 'nueva' | 'historial';
+const BASE = import.meta.env.BASE_URL;
 
-function nuevaConstancia(s: Solicitud): Constancia {
+/** Constancia que hace la coordinación desde cero: el código lo asigna el servicio al guardar. */
+function constanciaNueva(): Constancia {
   return {
-    ...s,
+    ...SOLICITUD_VACIA,
+    codigo: '',
+    creadoEn: new Date().toISOString(),
     estado: 'pendiente',
     fechaEmision: hoyIso(),
     parrafoAdicional: '',
     entrega: 'representante',
     motivoRechazo: '',
-    actualizadoEn: new Date().toISOString(),
+    actualizadoEn: '',
   };
 }
 
-/**
- * Revisión de una constancia. Llega de tres formas: el enlace de WhatsApp del
- * representante (#s=…), "Nueva constancia" o el historial de este dispositivo.
- */
-export function AdminConstanciaPage({ origen }: { origen: Origen }) {
+/** Revisión de una constancia: /admin/constancias/:codigo o /admin/constancias/nueva */
+export function AdminConstanciaPage({ nueva = false }: { nueva?: boolean }) {
+  return <AccesoCoordinacion>{(clave) => <Cargador clave={clave} nueva={nueva} />}</AccesoCoordinacion>;
+}
+
+function Cargador({ clave, nueva }: { clave: string; nueva: boolean }) {
   const { codigo } = useParams<{ codigo: string }>();
-  const { hash } = useLocation();
-  const [autenticado, setAutenticado] = useState(isAdminAuthenticated());
-  const [constancia, setConstancia] = useState<Constancia | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // Misma consulta que la bandeja: al venir de la lista, no se vuelve a pedir.
+  const lista = useQuery({
+    queryKey: ['admin-constancias'],
+    queryFn: () => listarSolicitudes(clave),
+    enabled: !nueva,
+  });
 
-  useEffect(() => {
-    if (!autenticado) return;
-    let vigente = true;
-    const cargar = async (): Promise<Constancia> => {
-      if (origen === 'nueva') {
-        return nuevaConstancia({ ...SOLICITUD_VACIA, codigo: generarCodigo(), creadoEn: new Date().toISOString() });
-      }
-      if (origen === 'historial') {
-        const guardada = buscarEnHistorial(codigo ?? '');
-        if (!guardada) throw new Error('Esta constancia no está en el historial de este dispositivo.');
-        return guardada;
-      }
-      const codificada = solicitudDelHash(hash);
-      if (!codificada) throw new Error('El enlace no trae ninguna solicitud.');
-      const solicitud = await decodificarSolicitud(codificada);
-      // Si ya se abrió antes en este dispositivo, se retoma lo revisado.
-      const previa = buscarEnHistorial(solicitud.codigo);
-      if (previa) return previa;
-      const recibida = nuevaConstancia(solicitud);
-      guardarEnHistorial(recibida);
-      return recibida;
-    };
-    cargar()
-      .then((c) => vigente && setConstancia(c))
-      .catch((err) => vigente && setError(err instanceof Error ? err.message : 'No se pudo abrir la solicitud.'));
-    return () => {
-      vigente = false;
-    };
-  }, [autenticado, origen, codigo, hash]);
+  if (nueva) return <RevisionConstancia inicial={constanciaNueva()} clave={clave} />;
+  if (lista.isLoading) return <p>Abriendo solicitud…</p>;
 
-  if (!autenticado) {
-    return <AdminLogin onLogin={() => setAutenticado(true)} />;
-  }
-
-  if (error) {
+  const constancia = lista.data?.find((c) => c.codigo === codigo?.toUpperCase());
+  if (!constancia) {
     return (
       <div className="admin-dashboard">
-        <div className="alert-error">{error}</div>
+        <div className="alert-error">
+          {lista.error instanceof Error ? lista.error.message : `No existe la solicitud ${codigo}.`}
+        </div>
         <Link to="/admin/constancias" className="btn btn-secondary">Volver a constancias</Link>
       </div>
     );
   }
-
-  if (!constancia) return <p>Abriendo solicitud...</p>;
-
-  return <RevisionConstancia key={constancia.codigo} inicial={constancia} esNueva={origen === 'nueva'} />;
+  return <RevisionConstancia key={constancia.codigo} inicial={constancia} clave={clave} />;
 }
 
 interface RevisionProps {
   inicial: Constancia;
-  esNueva: boolean;
+  clave: string;
 }
 
-function RevisionConstancia({ inicial, esNueva }: RevisionProps) {
+function RevisionConstancia({ inicial, clave }: RevisionProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const form = useForm<DatosSolicitud>({ defaultValues: datosDeSolicitud({ ...inicial }) });
+  const [codigo, setCodigo] = useState(inicial.codigo);
   const [estado, setEstado] = useState<EstadoConstancia>(inicial.estado);
   const [fechaEmision, setFechaEmision] = useState(inicial.fechaEmision || hoyIso());
   const [parrafoAdicional, setParrafoAdicional] = useState(inicial.parrafoAdicional);
   const [entrega, setEntrega] = useState<EntregaConstancia>(inicial.entrega);
   const [motivoRechazo, setMotivoRechazo] = useState(inicial.motivoRechazo);
-  const [generando, setGenerando] = useState(false);
+  const [ocupado, setOcupado] = useState(false);
   const [pdf, setPdf] = useState<{ blob: Blob; nombre: string; huella: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const compartir = puedeCompartirArchivos();
+  const esNueva = !codigo;
 
   const datos = limpiarSolicitud(form.watch());
   // El PDF generado deja de servir si se edita algo que sale impreso.
@@ -131,39 +103,78 @@ function RevisionConstancia({ inicial, esNueva }: RevisionProps) {
   const actual = (nuevoEstado: EstadoConstancia): Constancia => ({
     ...inicial,
     ...limpiarSolicitud(form.getValues()),
+    codigo,
     estado: nuevoEstado,
     fechaEmision,
     parrafoAdicional,
     entrega,
     motivoRechazo: nuevoEstado === 'rechazada' ? motivoRechazo.trim() : '',
-    actualizadoEn: new Date().toISOString(),
   });
 
-  const registrar = (nuevoEstado: EstadoConstancia, mensaje: string) => {
-    guardarEnHistorial(actual(nuevoEstado));
+  /** Guarda en el servicio. Una constancia nueva recibe aquí su código. */
+  const persistir = async (nuevoEstado: EstadoConstancia): Promise<Constancia> => {
+    const guardada = await guardarSolicitud(actual(nuevoEstado), clave);
+    if (!codigo) {
+      setCodigo(guardada.codigo);
+      window.history.replaceState(null, '', `${BASE}admin/constancias/${guardada.codigo}`);
+    }
     setEstado(nuevoEstado);
-    setAviso(mensaje);
+    await queryClient.invalidateQueries({ queryKey: ['admin-constancias'] });
+    return guardada;
   };
 
-  /**
-   * Paso 1: valida, genera el PDF y la marca aprobada. Compartir/abrir van en un
-   * segundo toque: el navegador los bloquea si no siguen directo a un clic.
-   */
-  const aprobar = form.handleSubmit(async () => {
-    setGenerando(true);
+  const conEspera = async (tarea: () => Promise<void>) => {
+    setOcupado(true);
     setError(null);
     setAviso(null);
     try {
-      const c = actual('aprobada');
+      await tarea();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo completar la acción.');
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  /**
+   * Paso 1: valida, la marca aprobada y genera el PDF. Compartir/abrir van en un
+   * segundo toque: el navegador los bloquea si no siguen directo a un clic.
+   */
+  const aprobar = form.handleSubmit(() =>
+    conEspera(async () => {
+      const c = await persistir('aprobada');
       const blob = await generarPdfConstancia({ datos: c, codigo: c.codigo, firmante: FIRMANTE, fechaEmision });
       setPdf({ blob, nombre: nombreArchivoPdf(c), huella });
-      registrar('aprobada', 'Constancia aprobada. Elige cómo entregarla.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo generar el PDF.');
-    } finally {
-      setGenerando(false);
+      setAviso('Constancia aprobada. Elige cómo entregarla.');
+    })
+  );
+
+  const guardar = form.handleSubmit(() =>
+    conEspera(async () => {
+      await persistir(estado);
+      setAviso('Cambios guardados.');
+    })
+  );
+
+  const rechazar = () => {
+    if (!motivoRechazo.trim()) {
+      setError('Escribe el motivo del rechazo para que el representante sepa qué corregir.');
+      return;
     }
-  });
+    conEspera(async () => {
+      await persistir('rechazada');
+      setAviso('Solicitud rechazada. Avísale al representante por WhatsApp.');
+    });
+  };
+
+  const eliminar = () => {
+    if (!window.confirm(`¿Eliminar la constancia ${codigo}? No se puede deshacer.`)) return;
+    conEspera(async () => {
+      await eliminarSolicitud(codigo, clave);
+      await queryClient.invalidateQueries({ queryKey: ['admin-constancias'] });
+      navigate('/admin/constancias');
+    });
+  };
 
   const compartirPdf = async () => {
     if (!pdfVigente) return;
@@ -184,25 +195,8 @@ function RevisionConstancia({ inicial, esNueva }: RevisionProps) {
     setTimeout(() => URL.revokeObjectURL(url), 120_000);
   };
 
-  const guardar = () => registrar(estado, 'Cambios guardados en el historial.');
-
-  const rechazar = () => {
-    if (!motivoRechazo.trim()) {
-      setError('Escribe el motivo del rechazo para que el representante sepa qué corregir.');
-      return;
-    }
-    setError(null);
-    registrar('rechazada', 'Solicitud rechazada. Avísale al representante por WhatsApp.');
-  };
-
-  const eliminar = () => {
-    if (!window.confirm(`¿Quitar la constancia ${inicial.codigo} del historial?`)) return;
-    eliminarDelHistorial(inicial.codigo);
-    navigate('/admin/constancias');
-  };
-
   const whatsapp =
-    estado !== 'pendiente' && datos.representanteTelefono.trim()
+    estado !== 'pendiente' && codigo && datos.representanteTelefono.trim()
       ? enlaceWhatsApp(datos.representanteTelefono, mensajeParaRepresentante(actual(estado)))
       : null;
 
@@ -211,10 +205,8 @@ function RevisionConstancia({ inicial, esNueva }: RevisionProps) {
       <div className="admin-edit-header">
         <div>
           <Link to="/admin/constancias" className="admin-back-link">← Volver a constancias</Link>
-          <h2>
-            {esNueva ? 'Nueva constancia' : `${inicial.codigo} — ${tituloTipo(datos.tipo)}`}
-          </h2>
-          {!esNueva && (
+          <h2>{esNueva ? 'Nueva constancia' : `${codigo} — ${tituloTipo(datos.tipo)}`}</h2>
+          {inicial.codigo && (
             <p className="fechas-ayuda">
               Solicitada el {fechaLegible(inicial.creadoEn)}
               {` por ${inicial.representanteNombre || inicial.estudianteNombre}`} ·{' '}
@@ -270,8 +262,8 @@ function RevisionConstancia({ inicial, esNueva }: RevisionProps) {
 
             <div className="revision-acciones">
               {!pdfVigente ? (
-                <button type="button" className="btn btn-primary" onClick={aprobar} disabled={generando}>
-                  {generando ? 'Generando PDF…' : estado === 'aprobada' ? 'Generar PDF' : 'Aprobar y generar PDF'}
+                <button type="button" className="btn btn-primary" onClick={aprobar} disabled={ocupado}>
+                  {ocupado ? 'Guardando…' : estado === 'aprobada' ? 'Generar PDF' : 'Aprobar y generar PDF'}
                 </button>
               ) : (
                 <>
@@ -316,15 +308,15 @@ function RevisionConstancia({ inicial, esNueva }: RevisionProps) {
               onChange={(e) => setMotivoRechazo(e.target.value)}
             />
             <div className="revision-acciones">
-              <button type="button" className="btn btn-danger" onClick={rechazar} disabled={generando}>
+              <button type="button" className="btn btn-danger" onClick={rechazar} disabled={ocupado}>
                 Rechazar
               </button>
-              <button type="button" className="btn btn-secondary" onClick={guardar} disabled={generando}>
+              <button type="button" className="btn btn-secondary" onClick={guardar} disabled={ocupado}>
                 Guardar cambios
               </button>
               {!esNueva && (
-                <button type="button" className="btn btn-secondary" onClick={eliminar} disabled={generando}>
-                  Quitar del historial
+                <button type="button" className="btn btn-secondary" onClick={eliminar} disabled={ocupado}>
+                  Eliminar
                 </button>
               )}
             </div>
@@ -344,7 +336,7 @@ function RevisionConstancia({ inicial, esNueva }: RevisionProps) {
           <HojaEscalada>
             <ConstanciaDocumento
               datos={{ ...datos, parrafoAdicional }}
-              codigo={inicial.codigo}
+              codigo={codigo || 'CT00-PENDIENTE'}
               firmante={FIRMANTE}
               fechaEmision={fechaEmision}
             />

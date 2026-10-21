@@ -1192,8 +1192,15 @@ textarea {
   margin: 0.2rem 0 0;
 }
 
-.plantilla-admin.vencida {
-  opacity: 0.6;
+.enlace-corto {
+  font-family: ui-monospace, Consolas, monospace;
+  color: #4f46e5;
+}
+
+.celda-plantilla {
+  display: block;
+  font-size: 0.75rem;
+  color: #6366f1;
 }
 
 .enlace-plantilla {

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CamposSolicitud } from './CamposSolicitud';
 import { WHATSAPP_COORDINACION } from '../config';
-import { codificarSolicitud, enlaceRevision, generarCodigo } from '../lib/enlaceSolicitud';
+import { crearSolicitud } from '../api/constancias.api';
 import { enlaceWhatsApp, mensajeSolicitud } from '../lib/utilidades';
 import {
   SOLICITUD_VACIA,
@@ -12,10 +12,9 @@ import {
   type Plantilla,
 } from '../types/constancia.types';
 
-interface Preparada {
+interface Enviada {
   codigo: string;
   whatsapp: string;
-  mensaje: string;
 }
 
 interface Props {
@@ -24,27 +23,27 @@ interface Props {
 }
 
 /**
- * El representante llena los datos; la app arma un mensaje con un enlace que
- * contiene la solicitud y lo envía por WhatsApp a la coordinación.
+ * El representante llena los datos y la solicitud se guarda en el servicio de
+ * constancias. Después avisa a la coordinación con un mensaje corto por WhatsApp.
  */
 export function SolicitarConstancia({ plantilla = null }: Props) {
   const iniciales = plantilla ? aplicarPlantilla(SOLICITUD_VACIA, plantilla) : SOLICITUD_VACIA;
   const form = useForm<DatosSolicitud>({ defaultValues: iniciales });
-  const [preparada, setPreparada] = useState<Preparada | null>(null);
+  const [enviada, setEnviada] = useState<Enviada | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [copiado, setCopiado] = useState(false);
+  const [avisado, setAvisado] = useState(false);
 
   const onSubmit = async (datos: DatosSolicitud) => {
     setError(null);
     try {
       // La plantilla manda sobre lo fijo, aunque el formulario lo haya cambiado.
-      const completos = plantilla ? aplicarPlantilla(datos, plantilla) : datos;
-      const solicitud = { ...limpiarSolicitud(completos), codigo: generarCodigo(), creadoEn: new Date().toISOString() };
-      const mensaje = mensajeSolicitud(solicitud, enlaceRevision(await codificarSolicitud(solicitud)));
-      setPreparada({ codigo: solicitud.codigo, mensaje, whatsapp: enlaceWhatsApp(WHATSAPP_COORDINACION, mensaje) });
+      const solicitud = limpiarSolicitud(plantilla ? aplicarPlantilla(datos, plantilla) : datos);
+      const { codigo } = await crearSolicitud({ ...solicitud, plantilla: plantilla?.codigo });
+      const mensaje = mensajeSolicitud({ ...solicitud, codigo });
+      setEnviada({ codigo, whatsapp: enlaceWhatsApp(WHATSAPP_COORDINACION, mensaje) });
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch {
-      setError('No se pudo preparar la solicitud. Intenta de nuevo.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo enviar la solicitud. Intenta de nuevo.');
     }
   };
 
@@ -52,40 +51,34 @@ export function SolicitarConstancia({ plantilla = null }: Props) {
   const otraSolicitud = () => {
     const { representanteNombre, representanteCedula, representanteTelefono } = form.getValues();
     form.reset({ ...iniciales, representanteNombre, representanteCedula, representanteTelefono });
-    setPreparada(null);
-    setCopiado(false);
+    setEnviada(null);
+    setAvisado(false);
   };
 
-  const copiarMensaje = async () => {
-    try {
-      await navigator.clipboard.writeText(preparada!.mensaje);
-      setCopiado(true);
-    } catch {
-      setCopiado(false);
-    }
-  };
-
-  if (preparada) {
+  if (enviada) {
     return (
       <div className="constancia-enviada">
-        <h2>Último paso: envíala por WhatsApp</h2>
+        <h2>¡Solicitud recibida!</h2>
         <p>
-          Se abrirá WhatsApp con el mensaje listo para la coordinación. Solo pulsa <strong>enviar</strong>.
+          Código: <strong>{enviada.codigo}</strong>. Avisa a la coordinación por WhatsApp: el mensaje ya
+          está escrito, solo pulsa <strong>enviar</strong>.
         </p>
-        <a className="btn btn-primary btn-whatsapp" href={preparada.whatsapp} target="_blank" rel="noreferrer">
-          Enviar por WhatsApp
+        <a
+          className="btn btn-primary btn-whatsapp"
+          href={enviada.whatsapp}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => setAvisado(true)}
+        >
+          Avisar por WhatsApp
         </a>
-        <p className="fechas-ayuda">
-          Código de tu solicitud: <strong>{preparada.codigo}</strong>. La coordinación te responderá
-          por WhatsApp al número que indicaste.
-        </p>
+        {avisado && (
+          <p className="fechas-ayuda">
+            Si en WhatsApp el mensaje aparece repetido, borra el sobrante antes de enviar.
+          </p>
+        )}
+        <p className="fechas-ayuda">La coordinación te responderá al número que indicaste.</p>
         <div className="constancia-enviada-acciones">
-          <button type="button" className="btn btn-secondary btn-sm" onClick={copiarMensaje}>
-            {copiado ? 'Mensaje copiado ✓' : '¿No abre? Copiar mensaje'}
-          </button>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPreparada(null)}>
-            Corregir datos
-          </button>
           <button type="button" className="btn btn-secondary btn-sm" onClick={otraSolicitud}>
             Hacer otra solicitud
           </button>
@@ -101,7 +94,7 @@ export function SolicitarConstancia({ plantilla = null }: Props) {
       {error && <div className="alert-error">{error}</div>}
 
       <button type="submit" className="btn btn-primary btn-bloque" disabled={form.formState.isSubmitting}>
-        Continuar
+        {form.formState.isSubmitting ? 'Enviando…' : 'Enviar solicitud'}
       </button>
     </form>
   );

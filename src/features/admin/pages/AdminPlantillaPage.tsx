@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { AdminLogin } from '../components/AdminLogin';
-import { isAdminAuthenticated } from '../../../lib/adminAuth';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AccesoCoordinacion } from '../components/AccesoCoordinacion';
 import {
   CampoAgrupacion,
   SeccionDetalle,
   SeccionTipo,
 } from '../../constancias/components/CamposSolicitud';
 import { ResumenPlantilla } from '../../constancias/components/ResumenPlantilla';
-import { codificarPlantilla, enlacePlantilla, generarCodigo } from '../../constancias/lib/enlaceSolicitud';
-import { buscarPlantilla, guardarPlantilla, tituloPlantilla } from '../../constancias/lib/plantillas';
-import { enlaceWhatsApp, mensajePlantilla } from '../../constancias/lib/utilidades';
+import { guardarPlantilla, listarPlantillas } from '../../constancias/api/constancias.api';
+import { tituloPlantilla } from '../../constancias/lib/plantillas';
+import { enlacePlantilla, enlaceWhatsApp, mensajePlantilla } from '../../constancias/lib/utilidades';
 import {
   SOLICITUD_VACIA,
   datosDePlantilla,
@@ -21,31 +21,41 @@ import {
 
 /** Crear o editar una plantilla: /admin/constancias/plantillas/nueva | /:codigo */
 export function AdminPlantillaPage() {
+  return <AccesoCoordinacion>{(clave) => <CargadorPlantilla clave={clave} />}</AccesoCoordinacion>;
+}
+
+function CargadorPlantilla({ clave }: { clave: string }) {
   const { codigo } = useParams<{ codigo: string }>();
-  const [autenticado, setAutenticado] = useState(isAdminAuthenticated());
+  const lista = useQuery({
+    queryKey: ['admin-plantillas'],
+    queryFn: () => listarPlantillas(clave),
+    enabled: !!codigo,
+  });
 
-  if (!autenticado) {
-    return <AdminLogin onLogin={() => setAutenticado(true)} />;
-  }
+  if (!codigo) return <EditorPlantilla clave={clave} />;
+  if (lista.isLoading) return <p>Cargando plantilla…</p>;
 
-  const existente = codigo ? buscarPlantilla(codigo) : undefined;
-  if (codigo && !existente) {
+  const existente = lista.data?.find((p) => p.codigo === codigo.toUpperCase());
+  if (!existente) {
     return (
       <div className="admin-dashboard">
-        <div className="alert-error">Esta plantilla no está en este dispositivo.</div>
+        <div className="alert-error">
+          {lista.error instanceof Error ? lista.error.message : `No existe la plantilla ${codigo}.`}
+        </div>
         <Link to="/admin/constancias/plantillas" className="btn btn-secondary">Volver a plantillas</Link>
       </div>
     );
   }
-  return <EditorPlantilla key={codigo ?? 'nueva'} inicial={existente} />;
+  return <EditorPlantilla key={existente.codigo} clave={clave} inicial={existente} />;
 }
 
-function EditorPlantilla({ inicial }: { inicial?: Plantilla }) {
+function EditorPlantilla({ clave, inicial }: { clave: string; inicial?: Plantilla }) {
+  const queryClient = useQueryClient();
   const form = useForm<DatosSolicitud>({
     defaultValues: { ...SOLICITUD_VACIA, ...(inicial?.datos ?? {}) },
   });
   const [titulo, setTitulo] = useState(inicial?.titulo ?? '');
-  const [guardada, setGuardada] = useState<{ plantilla: Plantilla; enlace: string } | null>(null);
+  const [guardada, setGuardada] = useState<Plantilla | null>(null);
   const [copiado, setCopiado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,26 +65,30 @@ function EditorPlantilla({ inicial }: { inicial?: Plantilla }) {
     setError(null);
     setCopiado(false);
     try {
-      const plantilla: Plantilla = {
-        codigo: inicial?.codigo ?? guardada?.plantilla.codigo ?? generarCodigo('PL'),
-        titulo: titulo.trim(),
-        creadoEn: inicial?.creadoEn ?? new Date().toISOString(),
-        datos: datosDePlantilla(valores),
-      };
-      guardarPlantilla(plantilla);
-      setGuardada({ plantilla, enlace: enlacePlantilla(await codificarPlantilla(plantilla)) });
-    } catch {
-      setError('No se pudo generar el enlace. Intenta de nuevo.');
+      const plantilla = await guardarPlantilla(
+        {
+          codigo: guardada?.codigo ?? inicial?.codigo,
+          creadoEn: inicial?.creadoEn,
+          titulo: titulo.trim(),
+          datos: datosDePlantilla(valores),
+        },
+        clave
+      );
+      setGuardada(plantilla);
+      await queryClient.invalidateQueries({ queryKey: ['admin-plantillas'] });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar la plantilla.');
     }
   });
 
   const copiar = async () => {
     if (!guardada) return;
+    const enlace = enlacePlantilla(guardada.codigo);
     try {
-      await navigator.clipboard.writeText(guardada.enlace);
+      await navigator.clipboard.writeText(enlace);
       setCopiado(true);
     } catch {
-      window.prompt('Copia el enlace:', guardada.enlace);
+      window.prompt('Copia el enlace:', enlace);
     }
   };
 
@@ -85,9 +99,7 @@ function EditorPlantilla({ inicial }: { inicial?: Plantilla }) {
           <Link to="/admin/constancias/plantillas" className="admin-back-link">← Volver a plantillas</Link>
           <h2>{inicial ? 'Editar plantilla' : 'Nueva plantilla'}</h2>
           {inicial && (
-            <p className="fechas-ayuda">
-              Si cambias algo, comparte el enlace nuevo: los enlaces viejos conservan los datos anteriores.
-            </p>
+            <p className="fechas-ayuda">El enlace no cambia: quien lo abra verá los datos actualizados.</p>
           )}
         </div>
       </div>
@@ -96,12 +108,18 @@ function EditorPlantilla({ inicial }: { inicial?: Plantilla }) {
 
       {guardada && (
         <section className="enlace-plantilla">
-          <h3>¡Plantilla lista! Comparte este enlace</h3>
-          <input type="text" readOnly value={guardada.enlace} onFocus={(e) => e.target.select()} aria-label="Enlace" />
+          <h3>¡Plantilla guardada! Ya aparece en /constancias</h3>
+          <input
+            type="text"
+            readOnly
+            value={enlacePlantilla(guardada.codigo)}
+            onFocus={(e) => e.target.select()}
+            aria-label="Enlace"
+          />
           <div className="admin-acciones">
             <a
               className="btn btn-primary"
-              href={enlaceWhatsApp('', mensajePlantilla(guardada.plantilla, guardada.enlace))}
+              href={enlaceWhatsApp('', mensajePlantilla(guardada))}
               target="_blank"
               rel="noreferrer"
             >
@@ -110,7 +128,7 @@ function EditorPlantilla({ inicial }: { inicial?: Plantilla }) {
             <button type="button" className="btn btn-secondary" onClick={copiar}>
               {copiado ? 'Copiado ✓' : 'Copiar enlace'}
             </button>
-            <a className="btn btn-secondary" href={guardada.enlace} target="_blank" rel="noreferrer">
+            <a className="btn btn-secondary" href={enlacePlantilla(guardada.codigo)} target="_blank" rel="noreferrer">
               Probar
             </a>
           </div>
@@ -144,8 +162,8 @@ function EditorPlantilla({ inicial }: { inicial?: Plantilla }) {
 
           <SeccionDetalle form={form} uso="plantilla" />
 
-          <button type="submit" className="btn btn-primary btn-bloque">
-            {guardada || inicial ? 'Guardar y actualizar enlace' : 'Guardar y obtener enlace'}
+          <button type="submit" className="btn btn-primary btn-bloque" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? 'Guardando…' : 'Guardar plantilla'}
           </button>
         </form>
 

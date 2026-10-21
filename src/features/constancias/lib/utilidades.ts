@@ -15,20 +15,33 @@ export function enlaceWhatsApp(telefono: string, mensaje: string): string {
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 }
 
-export function mensajeSolicitud(s: Solicitud, enlace: string): string {
+function urlDelSitio(ruta: string): string {
+  return `${window.location.origin}${import.meta.env.BASE_URL}${ruta}`;
+}
+
+/** Enlace corto para que la coordinación abra la solicitud: /r/CT26-XXXXXX */
+export function enlaceRevision(codigo: string): string {
+  return urlDelSitio(`r/${codigo}`);
+}
+
+/** Enlace corto de una plantilla para los representantes: /p/PL26-XXXXXX */
+export function enlacePlantilla(codigo: string): string {
+  return urlDelSitio(`p/${codigo}`);
+}
+
+/** Aviso corto a la coordinación: los datos ya están guardados en el servicio. */
+export function mensajeSolicitud(s: Pick<Solicitud, 'codigo' | 'tipo' | 'estudianteNombre' | 'representanteNombre' | 'representanteTelefono'>): string {
+  const quien = s.representanteNombre ? `Representante: ${s.representanteNombre}` : 'Estudiante mayor de edad';
   return [
-    `Solicitud de constancia ${s.codigo}: ${tituloTipo(s.tipo)}`,
-    `Estudiante: ${s.estudianteNombre}`,
-    s.representanteNombre
-      ? `Representante: ${s.representanteNombre} (${s.representanteTelefono})`
-      : `Contacto: ${s.representanteTelefono} (estudiante mayor de edad)`,
-    '',
-    `Abrir para revisar: ${enlace}`,
+    `Solicitud de constancia ${s.codigo}`,
+    `${tituloTipo(s.tipo)} · ${s.estudianteNombre}`,
+    `${quien} · ${s.representanteTelefono}`,
+    `Revisar: ${enlaceRevision(s.codigo)}`,
   ].join('\n');
 }
 
 /** Mensaje para compartir una plantilla en un grupo de WhatsApp. */
-export function mensajePlantilla(p: Plantilla, enlace: string): string {
+export function mensajePlantilla(p: Plantilla): string {
   const detalles = describirPlantilla(p.datos)
     .slice(1)
     .map((l) => `${l.etiqueta}: ${l.valor}`);
@@ -36,7 +49,7 @@ export function mensajePlantilla(p: Plantilla, enlace: string): string {
     `Constancia: ${tituloPlantilla(p)}`,
     ...detalles,
     '',
-    `Si necesitas la constancia, llena tus datos aquí: ${enlace}`,
+    `¿Necesitas la constancia? Llena tus datos aquí: ${enlacePlantilla(p.codigo)}`,
   ].join('\n');
 }
 

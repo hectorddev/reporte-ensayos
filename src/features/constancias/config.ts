@@ -1,9 +1,15 @@
 import type { Firmante } from './types/constancia.types';
 
 /**
- * Configuración de constancias. Vive en el código (no hay servidor):
- * para cambiar quién firma o el número de la coordinación, edita este archivo.
+ * Configuración de constancias: para cambiar quién firma, el número de la
+ * coordinación o el servicio donde se guardan, edita este archivo.
  */
+
+/**
+ * URL del Web App de constancias (termina en /exec), independiente del de
+ * reportes. Cómo obtenerla: apps-script/constancias/INSTRUCCIONES.md
+ */
+export const URL_CONSTANCIAS = 'https://script.google.com/macros/s/AKfycbyLV0Lz-HhRQY98bKuyCIGN8gLLX3QYSKkKKS171aEoJLKKLQDnipnA0V_V8H_8lANOSw/exec';
 
 /**
  * WhatsApp de la coordinación. Sirve formato local (0414-1234567) o

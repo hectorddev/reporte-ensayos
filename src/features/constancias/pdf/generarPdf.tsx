@@ -14,8 +14,8 @@ export async function generarPdfConstancia(
     import('./ConstanciaPdf'),
   ]);
   const recursos = {
-    logo: new URL(`${BASE}constancias/logo-alma-llanera.png`, window.location.href).href,
-    franja: new URL(`${BASE}constancias/franja-lateral.png`, window.location.href).href,
+    logo: new URL(`${BASE}img/constancias/logo-alma-llanera.png`, window.location.href).href,
+    franja: new URL(`${BASE}img/constancias/franja-lateral.png`, window.location.href).href,
   };
   return pdf(<ConstanciaPdf {...props} recursos={recursos} />).toBlob();
 }
