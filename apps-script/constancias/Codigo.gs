@@ -8,13 +8,11 @@
  *                eliminarSolicitud | listarPlantillas | guardarPlantilla |
  *                eliminarPlantilla
  *
- * Las solicitudes (con cédulas de menores) solo se leen con la clave de
- * coordinación. Defínela en Configuración del proyecto → Propiedades del
- * script → CLAVE_COORDINACION. Sin ella se usa la clave del panel, que es
- * pública en el código del sitio: configúrala antes de usarlo en serio.
+ * La clave de coordinación abre el panel del sitio y protege las solicitudes
+ * (con cédulas de menores). Es obligatoria: Configuración del proyecto →
+ * Propiedades del script → CLAVE_COORDINACION. Nunca va en el código.
  */
 
-var CLAVE_POR_DEFECTO = 'orquestatipica2008.';
 var MAX_DATOS = 20000; // caracteres por registro; una celda admite 50.000
 var DIAS_VIGENCIA = 30; // una plantilla de evento se oculta 30 días después
 
@@ -142,7 +140,10 @@ function generarCodigo_(tipo, prefijo) {
 }
 
 function exigirClave_(clave) {
-  var esperada = PropertiesService.getScriptProperties().getProperty('CLAVE_COORDINACION') || CLAVE_POR_DEFECTO;
+  var esperada = PropertiesService.getScriptProperties().getProperty('CLAVE_COORDINACION');
+  if (!esperada) {
+    throw new Error('Falta configurar CLAVE_COORDINACION en las propiedades del script (ver INSTRUCCIONES.md).');
+  }
   if (String(clave || '') !== esperada) throw new Error('CLAVE_INVALIDA');
 }
 

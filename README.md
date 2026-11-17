@@ -66,8 +66,9 @@ flowchart LR
   Actions.
 - **Dos servicios independientes** en Google Apps Script, cada uno con su propio
   Google Sheet: uno para reportes y otro para constancias.
-- Las acciones de la coordinación sobre constancias exigen una clave que valida
-  el servidor y que vive en las propiedades del script, no en el código.
+- El panel de coordinación (reportes y constancias) se abre con una sola clave
+  que valida el servidor y que vive en las propiedades del script, no en el
+  código.
 - El **PDF se genera en el navegador** con `@react-pdf/renderer`; la librería se
   descarga solo cuando se pide el primer PDF.
 

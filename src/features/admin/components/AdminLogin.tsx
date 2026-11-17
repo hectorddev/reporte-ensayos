@@ -1,14 +1,17 @@
 import { useState } from 'react';
-import { adminLogin } from '../api/admin.api';
-import { setAdminPassword } from '../../../lib/adminAuth';
+import { setClaveCoordinacion } from '../../../lib/adminAuth';
+import { ClaveInvalidaError, verificarClave } from '../../constancias/api/constancias.api';
 import { CampoClave } from './CampoClave';
 
 interface Props {
   onLogin: () => void;
+  /** Mensaje opcional sobre el formulario (p. ej. la clave cambió). */
+  aviso?: string;
 }
 
-export function AdminLogin({ onLogin }: Props) {
-  const [password, setPassword] = useState('');
+/** Entrada al panel con la clave de coordinación; la valida el servicio, no el sitio. */
+export function AdminLogin({ onLogin, aviso }: Props) {
+  const [clave, setClave] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,11 +21,12 @@ export function AdminLogin({ onLogin }: Props) {
     setLoading(true);
 
     try {
-      await adminLogin(password);
-      setAdminPassword(password);
+      await verificarClave(clave);
+      setClaveCoordinacion(clave);
       onLogin();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+      if (err instanceof ClaveInvalidaError) setError('Clave incorrecta.');
+      else setError(err instanceof Error ? err.message : 'No se pudo verificar la clave.');
     } finally {
       setLoading(false);
     }
@@ -31,17 +35,16 @@ export function AdminLogin({ onLogin }: Props) {
   return (
     <div className="admin-login">
       <form onSubmit={handleSubmit} className="admin-login-card">
-        <h2>Acceso administrador</h2>
-        <p className="fechas-ayuda">
-          Ingresa la contraseña de administrador para gestionar los reportes.
-        </p>
+        <h2>Acceso coordinación</h2>
+        <p className="fechas-ayuda">Ingresa la clave de coordinación para gestionar reportes y constancias.</p>
+        {aviso && <p className="error">{aviso}</p>}
 
-        <label htmlFor="admin-password">Contraseña</label>
-        <CampoClave id="admin-password" value={password} onChange={setPassword} placeholder="Contraseña de admin" />
+        <label htmlFor="clave-coordinacion">Clave de coordinación</label>
+        <CampoClave id="clave-coordinacion" value={clave} onChange={setClave} placeholder="Clave de coordinación" />
 
         {error && <p className="error">{error}</p>}
 
-        <button type="submit" className="btn btn-primary" disabled={loading || !password}>
+        <button type="submit" className="btn btn-primary" disabled={loading || !clave}>
           {loading ? 'Verificando...' : 'Entrar'}
         </button>
       </form>

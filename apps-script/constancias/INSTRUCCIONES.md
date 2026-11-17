@@ -16,22 +16,20 @@ coordinación ve todas las solicitudes desde cualquier equipo.
 2. Borra el contenido de `Código.gs` y pega todo [`Codigo.gs`](./Codigo.gs).
 3. Guarda (Ctrl+S).
 
-## 3. Clave de coordinación (importante)
+## 3. Clave de coordinación (obligatoria)
 
-El Sheet guarda nombres y cédulas de menores. Las acciones de la coordinación
-(ver, aprobar, editar solicitudes y plantillas) exigen una clave que se valida
-en el servidor.
+Es la única clave del panel del sitio (reportes y constancias). El Sheet guarda
+nombres y cédulas de menores, así que la clave vive solo aquí y la valida el
+servidor; el sitio no la conoce.
 
 1. En el editor: **Configuración del proyecto (⚙️) → Propiedades del script →
    Agregar propiedad del script**.
-2. Propiedad: `CLAVE_COORDINACION`. Valor: una clave que **no** esté en el
-   código del sitio.
+2. Propiedad: `CLAVE_COORDINACION`. Valor: la clave que usará la coordinación.
 3. Guarda.
 
-Sin esta propiedad el servidor acepta la contraseña del panel admin, que es
-visible en el código público del sitio: sirve para probar, no para usarlo con
-datos reales. Al entrar a Constancias en el panel se te pedirá la clave de
-coordinación una vez por sesión.
+Sin esta propiedad nadie puede entrar al panel. Para cambiar la clave, edita el
+valor aquí: no hace falta volver a desplegar, y quien tenga una sesión abierta
+deberá ingresar la nueva.
 
 ## 4. Desplegar como Web App
 

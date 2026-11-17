@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { clearAdminPassword } from '../../../lib/adminAuth';
+import { cerrarSesion as cerrarSesionPanel } from '../../../lib/adminAuth';
 
 const claseNav = ({ isActive }: { isActive: boolean }) => `nav-btn nav-link ${isActive ? 'activo' : ''}`;
 
@@ -13,7 +13,7 @@ export function AdminLayout() {
   useEffect(() => setMenuAbierto(false), [pathname]);
 
   const cerrarSesion = () => {
-    clearAdminPassword();
+    cerrarSesionPanel();
     navigate('/admin');
     window.location.reload();
   };

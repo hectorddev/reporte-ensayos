@@ -7,7 +7,7 @@ import {
   actualizarAdminReporte,
   fetchAdminReporte,
 } from '../api/admin.api';
-import { isAdminAuthenticated } from '../../../lib/adminAuth';
+import { haySesion } from '../../../lib/adminAuth';
 import {
   reporteToFormData,
   type ReporteMensualFormData,
@@ -17,7 +17,7 @@ export function AdminReporteEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [autenticado, setAutenticado] = useState(isAdminAuthenticated());
+  const [autenticado, setAutenticado] = useState(haySesion());
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [exito, setExito] = useState<string | null>(null);

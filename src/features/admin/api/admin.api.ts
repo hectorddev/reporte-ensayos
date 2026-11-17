@@ -1,4 +1,3 @@
-import { ADMIN_PASSWORD } from '../../../lib/datosEstaticos';
 import {
   actualizarReporte,
   eliminarReporte,
@@ -15,15 +14,9 @@ import type {
 } from '../../reporte-mensual/types/reporteMensual.types';
 
 /**
- * Administración 100% local. El "login" valida contra una contraseña fija del
- * código: no es seguridad real, solo evita ediciones accidentales.
+ * Administración de reportes. El acceso al panel lo controla la clave de
+ * coordinación (ver AdminLogin), que valida el servicio de constancias.
  */
-
-export async function adminLogin(password: string): Promise<void> {
-  if (password !== ADMIN_PASSWORD) {
-    throw new Error('Contraseña incorrecta');
-  }
-}
 
 export async function fetchAdminReportes(): Promise<ReporteMensualGuardado[]> {
   const reportes = await obtenerReportes();

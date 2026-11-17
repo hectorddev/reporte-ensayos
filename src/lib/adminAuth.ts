@@ -1,23 +1,10 @@
-const STORAGE_KEY = 'admin_password';
-/** Clave del servicio de constancias; la valida el servidor, no este código. */
+/**
+ * Sesión del panel: la clave de coordinación, que valida el servicio de
+ * constancias (no está en el código del sitio). Dura lo que la pestaña.
+ */
 const CLAVE_COORDINACION_KEY = 'clave_coordinacion';
-
-export function getAdminPassword(): string | null {
-  return sessionStorage.getItem(STORAGE_KEY);
-}
-
-export function setAdminPassword(password: string) {
-  sessionStorage.setItem(STORAGE_KEY, password);
-}
-
-export function clearAdminPassword() {
-  sessionStorage.removeItem(STORAGE_KEY);
-  sessionStorage.removeItem(CLAVE_COORDINACION_KEY);
-}
-
-export function isAdminAuthenticated(): boolean {
-  return !!getAdminPassword();
-}
+/** Sesiones anteriores guardaban aquí la contraseña del panel, ya eliminada. */
+const CLAVE_ANTIGUA_KEY = 'admin_password';
 
 export function getClaveCoordinacion(): string | null {
   return sessionStorage.getItem(CLAVE_COORDINACION_KEY);
@@ -27,6 +14,11 @@ export function setClaveCoordinacion(clave: string) {
   sessionStorage.setItem(CLAVE_COORDINACION_KEY, clave);
 }
 
-export function clearClaveCoordinacion() {
+export function haySesion(): boolean {
+  return !!getClaveCoordinacion();
+}
+
+export function cerrarSesion() {
   sessionStorage.removeItem(CLAVE_COORDINACION_KEY);
+  sessionStorage.removeItem(CLAVE_ANTIGUA_KEY);
 }

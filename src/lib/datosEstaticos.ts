@@ -23,6 +23,3 @@ export const AGRUPACIONES: Agrupacion[] = [
 export function buscarAgrupacion(id: string): Agrupacion | undefined {
   return AGRUPACIONES.find((a) => a.id === id);
 }
-
-/** Contraseña local del panel admin. No es seguridad real (visible en el código). */
-export const ADMIN_PASSWORD = 'orquestatipica2008.';

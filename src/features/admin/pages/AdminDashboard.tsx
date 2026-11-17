@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AdminLogin } from '../components/AdminLogin';
 import { fetchAdminReportes, eliminarAdminReporte } from '../api/admin.api';
-import { isAdminAuthenticated } from '../../../lib/adminAuth';
+import { haySesion } from '../../../lib/adminAuth';
 import { exportarReportesAExcel } from '../../../lib/exportarExcel';
 import { limpiarTodo } from '../../../lib/nube';
 import {
@@ -13,7 +13,7 @@ import {
 } from '../../reporte-mensual/types/reporteMensual.types';
 
 export function AdminDashboard() {
-  const [autenticado, setAutenticado] = useState(isAdminAuthenticated());
+  const [autenticado, setAutenticado] = useState(haySesion());
   const queryClient = useQueryClient();
 
   const { data: reportes = [], isLoading, error, refetch } = useQuery({
