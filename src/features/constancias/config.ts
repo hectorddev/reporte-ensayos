@@ -15,7 +15,7 @@ export const URL_CONSTANCIAS = 'https://script.google.com/macros/s/AKfycbyLV0Lz-
  * WhatsApp de la coordinación. Sirve formato local (0414-1234567) o
  * internacional (584141234567). Vacío: WhatsApp pide elegir el contacto.
  */
-export const WHATSAPP_COORDINACION = '0424-7218061';
+export const WHATSAPP_COORDINACION = '0276-3945614';
 
 /** Quien firma las constancias (texto del documento). La firma va a mano. */
 export const FIRMANTE: Firmante = {
