@@ -31,12 +31,36 @@ export function fechaLarga(iso: string): string {
   return `${dia} de ${MESES[mes - 1]} de ${anio}`;
 }
 
+function diaSemana(iso: string): string {
+  const { anio, mes, dia } = partes(iso);
+  return DIAS[new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay()];
+}
+
 /** sábado 17 de octubre de 2026 */
 export function fechaConDia(iso: string): string {
   if (!iso) return '';
-  const { anio, mes, dia } = partes(iso);
-  const semana = DIAS[new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay()];
-  return `${semana} ${fechaLarga(iso)}`;
+  return `${diaSemana(iso)} ${fechaLarga(iso)}`;
+}
+
+/** ¿La actividad dura más de un día? (último día posterior al primero) */
+export function esVariosDias(d: { fecha: string; fechaFin: string }): boolean {
+  return !!d.fecha && !!d.fechaFin && d.fechaFin > d.fecha;
+}
+
+/**
+ * «del viernes 13 al domingo 15 de noviembre de 2026»; el mes y el año solo se
+ * repiten si cambian: «del sábado 31 de octubre al domingo 1 de noviembre de 2026».
+ */
+export function rangoFechas(inicio: string, fin: string): string {
+  const a = partes(inicio);
+  const b = partes(fin);
+  const desde =
+    a.anio !== b.anio
+      ? fechaConDia(inicio)
+      : a.mes !== b.mes
+        ? `${diaSemana(inicio)} ${a.dia} de ${MESES[a.mes - 1]}`
+        : `${diaSemana(inicio)} ${a.dia}`;
+  return `del ${desde} al ${fechaConDia(fin)}`;
 }
 
 /** Cierre del formato del núcleo: «a los 04 días del mes de Noviembre del 2026». */
@@ -133,7 +157,7 @@ function textoHorario(c: DatosDocumento, diario: boolean): string {
   if (c.horaInicio && c.horaFin) {
     return `, en el horario${diario ? ' diario' : ''} comprendido entre ${conArticulo(c.horaInicio)} y ${conArticulo(c.horaFin)}`;
   }
-  if (c.horaInicio) return `, a partir de ${conArticulo(c.horaInicio)}`;
+  if (c.horaInicio) return `, a partir de ${conArticulo(c.horaInicio)}${diario ? ' cada día' : ''}`;
   return '';
 }
 
@@ -200,17 +224,107 @@ function negrita(t: string): Segmento {
   return { texto: t, negrita: true };
 }
 
+type Articulo = 'el' | 'la' | 'los' | 'las';
+
+/** Cómo se nombra la actividad si no tiene nombre propio: «el concierto». */
+interface Generico {
+  articulo: Articulo;
+  sustantivo: string;
+  /** Solo sin nombre: «el ensayo de la agrupación». */
+  complemento?: string;
+}
+
+/** Palabras con que suele empezar el nombre de una actividad (sin tildes). */
+const SUSTANTIVOS_EVENTO: Record<string, Articulo> = {
+  concierto: 'el', conciertos: 'los', ensayo: 'el', ensayos: 'los', jornada: 'la', jornadas: 'las',
+  encuentro: 'el', encuentros: 'los', festival: 'el', gira: 'la', campamento: 'el', taller: 'el',
+  talleres: 'los', intensivo: 'el', temporada: 'la', gala: 'la', muestra: 'la', presentacion: 'la',
+  presentaciones: 'las', montaje: 'el', clase: 'la', clases: 'las', seminario: 'el', curso: 'el',
+  recital: 'el', concurso: 'el', audicion: 'la', audiciones: 'las', retiro: 'el', convivencia: 'la',
+  congreso: 'el', foro: 'el', programa: 'el', proyecto: 'el', semana: 'la', certamen: 'el',
+};
+
+/** Palabras que pueden ir antes: «I Encuentro», «Gran Concierto», «Primera Jornada». */
+const ANTES_DEL_SUSTANTIVO = /^([ivxlc]+|\d+\s*(er|ro|do|to|vo|no|mo|°|º|ª)?\.?|gran|primer|primera|segundo|segunda|tercer|tercera|cuarto|cuarta|quinto|quinta|nuevo|nueva)$/;
+
+function sinTildes(palabra: string): string {
+  return palabra.toLocaleLowerCase('es').normalize('NFD').replace(/\p{M}/gu, '');
+}
+
+/** «Encuentro Regional de Orquestas» → «el»; si el nombre no dice qué es, null. */
+function articuloDelNombre(nombre: string): Articulo | null {
+  const palabras = nombre.split(/\s+/).map(sinTildes);
+  for (const palabra of palabras.slice(0, 2)) {
+    if (SUSTANTIVOS_EVENTO[palabra]) return SUSTANTIVOS_EVENTO[palabra];
+    if (!ANTES_DEL_SUSTANTIVO.test(palabra)) return null;
+  }
+  return null;
+}
+
+/** «realizado» → «realizada», «realizados»… según lo que se nombra. */
+function concordar(participio: string, articulo: Articulo): string {
+  const raiz = participio.slice(0, -1);
+  return { el: `${raiz}o`, la: `${raiz}a`, los: `${raiz}os`, las: `${raiz}as` }[articulo];
+}
+
 /**
- * «participó en» + «el concierto» + nombre en negrita + resto de la frase. Si el
- * nombre ya empieza con la palabra («Concierto de Navidad») no se repite:
- * «participó en el CONCIERTO DE NAVIDAD». «a el» se contrae en «al».
+ * «participó en» + la actividad + resto de la frase, donde `resto` recibe el
+ * artículo para concordar («realizado», «realizada», «se realizan»). Si el
+ * nombre ya dice qué es («Encuentro Regional…») no se antepone el genérico:
+ * «participó en el ENCUENTRO REGIONAL…» y no «en el concierto ENCUENTRO…».
+ * «a el» se contrae en «al».
  */
-function conEvento(inicio: string, generico: string, nombre: string, sinNombre: string, fin: string): Parrafo {
-  const contraer = (t: string) => t.replace(/\ba el\b/, 'al');
-  if (!nombre) return [texto(contraer(`${inicio} ${generico}${sinNombre}${fin}`))];
-  const [articulo, sustantivo] = generico.split(' ');
-  const repite = nombre.toLowerCase().startsWith(sustantivo);
-  return [texto(contraer(`${inicio} ${repite ? articulo : generico} `)), negrita(nombre.toUpperCase()), texto(fin)];
+function conEvento(inicio: string, generico: Generico, nombre: string, resto: (a: Articulo) => string): Parrafo {
+  const propio = nombre ? articuloDelNombre(nombre) : null;
+  const articulo = propio ?? generico.articulo;
+  const enlace = `${inicio} ${articulo}`.replace(/\ba el$/, 'al');
+  if (!nombre) return [texto(`${enlace} ${generico.sustantivo}${generico.complemento ?? ''}${resto(articulo)}`)];
+  return [
+    texto(propio ? `${enlace} ` : `${enlace} ${generico.sustantivo} `),
+    negrita(nombre.toUpperCase()),
+    texto(resto(articulo)),
+  ];
+}
+
+const plural = (a: Articulo) => a === 'los' || a === 'las';
+
+/**
+ * Concierto, jornada o ensayo, de uno o varios días. El tiempo verbal depende de
+ * la fecha de emisión: «participará en el ENCUENTRO REGIONAL DE ORQUESTAS a
+ * realizarse del viernes 13 al domingo 15 de noviembre de 2026, en el horario
+ * diario comprendido entre las 8:00 am y las 5:00 pm, en …».
+ */
+function parrafoEvento(c: DatosDocumento, elCual: string, fechaEmision: string): Parrafo {
+  const varios = esVariosDias(c);
+  const fechas = varios ? rangoFechas(c.fecha, c.fechaFin) : `el día ${fechaConDia(c.fecha)}`;
+  const lugar = c.lugar.trim() ? `, en ${c.lugar.trim()}` : '';
+  const cuando = `${fechas}${textoHorario(c, varios)}${lugar}.`;
+  const t = tiempoDe(c.fecha, varios ? c.fechaFin : '', fechaEmision);
+  const nombre = c.eventoNombre.trim();
+  const seRealiza = (a: Articulo) => ` que se ${plural(a) ? 'realizan' : 'realiza'} ${cuando}`;
+  const realizado = (a: Articulo) => ` ${concordar('realizado', a)} ${cuando}`;
+
+  if (c.tipo === 'ensayo') {
+    const generico: Generico = varios
+      ? { articulo: 'los', sustantivo: 'ensayos', complemento: ' de la agrupación' }
+      : { articulo: 'el', sustantivo: 'ensayo', complemento: ' de la agrupación' };
+    if (t === 'futuro') {
+      const pautado = (a: Articulo) => ` ${concordar('pautado', a)} ${varios ? '' : 'para '}${cuando}`;
+      return conEvento(`${elCual} deberá asistir a`, generico, nombre, pautado);
+    }
+    if (t === 'presente') return conEvento(`${elCual} asiste a`, generico, nombre, seRealiza);
+    return conEvento(`${elCual} asistió a`, generico, nombre, realizado);
+  }
+
+  let generico: Generico = { articulo: 'el', sustantivo: 'concierto' };
+  if (c.tipo === 'jornada') generico = { articulo: 'la', sustantivo: 'jornada de ensayos' };
+  else if (varios) generico = { articulo: 'los', sustantivo: 'conciertos' };
+
+  if (t === 'futuro') return conEvento(`${elCual} participará en`, generico, nombre, () => ` a realizarse ${cuando}`);
+  if (t === 'presente') {
+    return conEvento(`${elCual} ${varios ? 'se encuentra participando' : 'participa'} en`, generico, nombre, seRealiza);
+  }
+  return conEvento(`${elCual} participó en`, generico, nombre, realizado);
 }
 
 /**
@@ -267,8 +381,6 @@ export function construirContenido(
   );
 
   // 3. Según el tipo
-  const nombreEvento = c.eventoNombre.trim();
-  const lugar = c.lugar.trim() ? `, en ${c.lugar.trim()}` : '';
   let especifico: Parrafo = [];
   let tabla: FilaHorario[] | null = null;
 
@@ -294,43 +406,11 @@ export function construirContenido(
       ];
       break;
     }
-    case 'concierto': {
-      const cuando = `el día ${fechaConDia(c.fecha)}${textoHorario(c, false)}${lugar}.`;
-      const t = tiempoDe(c.fecha, '', fechaEmision);
-      especifico =
-        t === 'futuro'
-          ? conEvento(`${elCual} participará en`, 'el concierto', nombreEvento, '', ` a realizarse ${cuando}`)
-          : t === 'presente'
-            ? conEvento(`${elCual} participa en`, 'el concierto', nombreEvento, '', ` que se realiza ${cuando}`)
-            : conEvento(`${elCual} participó en`, 'el concierto', nombreEvento, '', ` realizado ${cuando}`);
+    case 'concierto':
+    case 'jornada':
+    case 'ensayo':
+      especifico = parrafoEvento(c, elCual, fechaEmision);
       break;
-    }
-    case 'ensayo': {
-      const cuando = `el día ${fechaConDia(c.fecha)}${textoHorario(c, false)}${lugar}.`;
-      const t = tiempoDe(c.fecha, '', fechaEmision);
-      especifico =
-        t === 'futuro'
-          ? conEvento(`${elCual} deberá asistir a`, 'el ensayo', nombreEvento, ' de la agrupación', ` pautado para ${cuando}`)
-          : t === 'presente'
-            ? conEvento(`${elCual} asiste a`, 'el ensayo', nombreEvento, ' de la agrupación', ` que se realiza ${cuando}`)
-            : conEvento(`${elCual} asistió a`, 'el ensayo', nombreEvento, ' de la agrupación', ` realizado ${cuando}`);
-      break;
-    }
-    case 'jornada': {
-      const variosDias = !!c.fechaFin && c.fechaFin !== c.fecha;
-      const rango = variosDias
-        ? `desde el ${fechaConDia(c.fecha)} hasta el ${fechaConDia(c.fechaFin)}`
-        : `el día ${fechaConDia(c.fecha)}`;
-      const cuando = `${rango}${textoHorario(c, variosDias)}${lugar}.`;
-      const t = tiempoDe(c.fecha, variosDias ? c.fechaFin : '', fechaEmision);
-      especifico =
-        t === 'futuro'
-          ? conEvento(`${elCual} participará en`, 'la jornada de ensayos', nombreEvento, '', ` a realizarse ${cuando}`)
-          : t === 'presente'
-            ? conEvento(`${elCual} se encuentra participando en`, 'la jornada de ensayos', nombreEvento, '', ` que se realiza ${cuando}`)
-            : conEvento(`${elCual} participó en`, 'la jornada de ensayos', nombreEvento, '', ` realizada ${cuando}`);
-      break;
-    }
   }
 
   const adicionales = (c.parrafoAdicional ?? '')

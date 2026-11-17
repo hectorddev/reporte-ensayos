@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Controller, useFieldArray, type RegisterOptions, type UseFormReturn } from 'react-hook-form';
 import { AGRUPACIONES } from '../../../lib/datosEstaticos';
 import { CampoFecha } from './CampoFecha';
@@ -287,10 +288,24 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
     register,
     watch,
     control,
+    setValue,
+    clearErrors,
     formState: { errors },
   } = form;
   const tipo = watch('tipo');
   const fechaInicio = watch('fecha');
+  const fechaFin = watch('fechaFin');
+  // Mientras no se elija: la jornada suele ser de varios días; lo demás, de uno
+  // (o varios si ya trae último día, p. ej. al editar una plantilla).
+  const [duracionElegida, setDuracionElegida] = useState<boolean | null>(null);
+  const variosDias = duracionElegida ?? (tipo === 'jornada' || !!fechaFin);
+  const elegirDuracion = (varios: boolean) => {
+    setDuracionElegida(varios);
+    if (!varios) {
+      setValue('fechaFin', '');
+      clearErrors('fechaFin');
+    }
+  };
   const horario = useFieldArray({
     control,
     name: 'horario',
@@ -399,18 +414,18 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
 
       {(tipo === 'concierto' || tipo === 'jornada' || tipo === 'ensayo') && (
         <>
-          <h3>{tipo === 'concierto' ? 'Concierto' : tipo === 'jornada' ? 'Jornada de ensayos' : 'Ensayo'}</h3>
+          <h3>{tipo === 'concierto' ? 'Concierto o encuentro' : tipo === 'jornada' ? 'Jornada de ensayos' : 'Ensayo'}</h3>
           <div className="campos-grid">
             <div className="campo-ancho">
               <label htmlFor="eventoNombre">
-                Nombre {tipo === 'concierto' ? 'del concierto' : tipo === 'jornada' ? 'de la jornada' : 'del ensayo'} (opcional)
+                Nombre {tipo === 'concierto' ? 'del concierto o encuentro' : tipo === 'jornada' ? 'de la jornada' : 'del ensayo'} (opcional)
               </label>
               <input
                 id="eventoNombre"
                 type="text"
                 placeholder={
                   tipo === 'concierto'
-                    ? 'Ej: Concierto de Navidad'
+                    ? 'Ej: Encuentro Regional de Orquestas'
                     : tipo === 'jornada'
                       ? 'Ej: Intensivo de vacaciones'
                       : 'Ej: Ensayo general de vientos metal'
@@ -419,22 +434,50 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
               />
             </div>
 
+            <div className="campo-ancho">
+              <fieldset className="opciones-botones opciones-duracion">
+                <legend>¿Cuántos días dura?</legend>
+                {(
+                  [
+                    [false, 'Un solo día'],
+                    [true, 'Varios días'],
+                  ] as const
+                ).map(([valor, texto]) => (
+                  <label key={texto} className={variosDias === valor ? 'activo' : ''}>
+                    <input type="radio" name="duracion" checked={variosDias === valor} onChange={() => elegirDuracion(valor)} />
+                    {texto}
+                  </label>
+                ))}
+              </fieldset>
+              {variosDias && (
+                <p className="fechas-ayuda">
+                  Indica el primer y el último día. La constancia dirá, por ejemplo: «del viernes 13 al domingo 15 de
+                  noviembre», con el mismo horario para cada día.
+                </p>
+              )}
+            </div>
+
             <div>
-              <label htmlFor="fecha">{tipo === 'jornada' ? 'Desde' : 'Fecha'}</label>
-              <FechaControlada form={form} name="fecha" rules={{ required: 'Indica la fecha' }} />
+              <label htmlFor="fecha">{variosDias ? 'Primer día' : 'Fecha'}</label>
+              <FechaControlada
+                form={form}
+                name="fecha"
+                rules={{ required: variosDias ? 'Indica el primer día' : 'Indica la fecha', deps: ['fechaFin'] }}
+              />
               <MensajeError mensaje={errors.fecha?.message} />
             </div>
 
-            {tipo === 'jornada' && (
+            {variosDias && (
               <div>
-                <label htmlFor="fechaFin">Hasta</label>
+                <label htmlFor="fechaFin">Último día</label>
                 <FechaControlada
                   form={form}
                   name="fechaFin"
                   min={fechaInicio || undefined}
                   rules={{
-                    required: 'Indica la fecha final',
-                    validate: (v) => !fechaInicio || v >= fechaInicio || 'Debe ser igual o posterior al inicio',
+                    required: 'Indica el último día',
+                    validate: (v) =>
+                      !fechaInicio || v > fechaInicio || 'El último día debe ser después del primero. Si es un solo día, elige «Un solo día».',
                   }}
                 />
                 <MensajeError mensaje={errors.fechaFin?.message} />
@@ -442,12 +485,12 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
             )}
 
             <div>
-              <label htmlFor="horaInicio">Hora de inicio (opcional)</label>
+              <label htmlFor="horaInicio">Hora de inicio{variosDias ? ' de cada día' : ''} (opcional)</label>
               <HoraControlada form={form} name="horaInicio" id="horaInicio" etiqueta="Hora de inicio" rules={{ deps: ['horaFin'] }} />
             </div>
 
             <div>
-              <label htmlFor="horaFin">Hora de fin (opcional)</label>
+              <label htmlFor="horaFin">Hora de fin{variosDias ? ' de cada día' : ''} (opcional)</label>
               <HoraControlada
                 form={form}
                 name="horaFin"

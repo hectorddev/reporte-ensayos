@@ -1099,6 +1099,11 @@ input[type='radio'] {
   background: #eef2ff;
 }
 
+/* Un solo día / Varios días: sin estirarse a todo el ancho en pantalla grande. */
+.opciones-duracion {
+  max-width: 24rem;
+}
+
 .campos-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

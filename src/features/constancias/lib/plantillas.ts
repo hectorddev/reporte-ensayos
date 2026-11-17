@@ -1,4 +1,4 @@
-import { fechaConDia, rangoHoras } from './textoConstancia';
+import { esVariosDias, fechaConDia, rangoFechas, rangoHoras } from './textoConstancia';
 import { tituloTipo, type DatosPlantilla, type Plantilla } from '../types/constancia.types';
 
 /**
@@ -22,13 +22,14 @@ export function describirPlantilla(d: DatosPlantilla): { etiqueta: string; valor
       lineas.push({ etiqueta: fila.dia, valor: `${rangoHoras(fila.horaInicio, fila.horaFin)} · ${fila.actividad}` });
     }
   } else if (d.fecha) {
-    const variosDias = d.tipo === 'jornada' && d.fechaFin && d.fechaFin !== d.fecha;
-    lineas.push({
-      etiqueta: variosDias ? 'Fechas' : 'Fecha',
-      valor: variosDias ? `del ${fechaConDia(d.fecha)} al ${fechaConDia(d.fechaFin)}` : fechaConDia(d.fecha),
-    });
+    const varios = esVariosDias(d);
+    lineas.push(
+      varios
+        ? { etiqueta: 'Fechas', valor: rangoFechas(d.fecha, d.fechaFin) }
+        : { etiqueta: 'Fecha', valor: fechaConDia(d.fecha) }
+    );
     const horas = rangoHoras(d.horaInicio, d.horaFin);
-    if (horas) lineas.push({ etiqueta: 'Horario', valor: horas });
+    if (horas) lineas.push({ etiqueta: varios ? 'Horario (cada día)' : 'Horario', valor: horas });
   }
   if (d.lugar.trim()) lineas.push({ etiqueta: 'Lugar', valor: d.lugar.trim() });
   return lineas;

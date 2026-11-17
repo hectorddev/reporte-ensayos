@@ -1,4 +1,4 @@
-import { esMenorDeEdad, nombrePersona } from '../lib/textoConstancia';
+import { esMenorDeEdad, esVariosDias, nombrePersona } from '../lib/textoConstancia';
 
 export type TipoConstancia = 'horario' | 'pertenencia' | 'concierto' | 'jornada' | 'ensayo';
 export type EstadoConstancia = 'pendiente' | 'aprobada' | 'rechazada';
@@ -17,8 +17,8 @@ export const TIPOS_CONSTANCIA: { id: TipoConstancia; titulo: string; descripcion
   },
   {
     id: 'concierto',
-    titulo: 'Asistencia a concierto',
-    descripcion: 'Participación en un concierto o presentación.',
+    titulo: 'Concierto o encuentro',
+    descripcion: 'Concierto, presentación, encuentro o festival, de uno o varios días.',
   },
   {
     id: 'jornada',
@@ -28,7 +28,7 @@ export const TIPOS_CONSTANCIA: { id: TipoConstancia; titulo: string; descripcion
   {
     id: 'ensayo',
     titulo: 'Asistencia a un ensayo',
-    descripcion: 'Un ensayo en una fecha específica.',
+    descripcion: 'Uno o varios días de ensayo.',
   },
 ];
 
@@ -215,7 +215,8 @@ export function limpiarSolicitud(d: DatosSolicitud): DatosSolicitud {
     fechaIngreso: d.tipo === 'pertenencia' ? d.fechaIngreso : '',
     eventoNombre: evento ? d.eventoNombre : '',
     fecha: evento ? d.fecha : '',
-    fechaFin: d.tipo === 'jornada' ? d.fechaFin : '',
+    // Cualquier actividad puede durar varios días; si no, sin último día.
+    fechaFin: evento && esVariosDias(d) ? d.fechaFin : '',
     horaInicio: evento ? d.horaInicio : '',
     horaFin: evento ? d.horaFin : '',
     lugar: evento ? d.lugar : '',
