@@ -1,5 +1,5 @@
 import { NUCLEO, PARRAFOS_INSTITUCIONALES } from '../config';
-import type { DatosSolicitud, FilaHorario, Firmante } from '../types/constancia.types';
+import type { DatosSolicitud, FilaHorario, Firmante, HorarioDia } from '../types/constancia.types';
 
 /** Lo que necesita el texto: los datos de la solicitud + el párrafo de la coordinación. */
 export type DatosDocumento = DatosSolicitud & { parrafoAdicional?: string };
@@ -51,16 +51,54 @@ export function esVariosDias(d: { fecha: string; fechaFin: string }): boolean {
  * «del viernes 13 al domingo 15 de noviembre de 2026»; el mes y el año solo se
  * repiten si cambian: «del sábado 31 de octubre al domingo 1 de noviembre de 2026».
  */
-export function rangoFechas(inicio: string, fin: string): string {
+export function rangoFechas(inicio: string, fin: string, conAnio = true): string {
   const a = partes(inicio);
   const b = partes(fin);
-  const desde =
-    a.anio !== b.anio
-      ? fechaConDia(inicio)
-      : a.mes !== b.mes
-        ? `${diaSemana(inicio)} ${a.dia} de ${MESES[a.mes - 1]}`
-        : `${diaSemana(inicio)} ${a.dia}`;
-  return `del ${desde} al ${fechaConDia(fin)}`;
+  let desde = `${diaSemana(inicio)} ${a.dia}`;
+  if (conAnio && a.anio !== b.anio) desde = fechaConDia(inicio);
+  else if (a.mes !== b.mes || a.anio !== b.anio) desde += ` de ${MESES[a.mes - 1]}`;
+  return `del ${desde} al ${conAnio ? fechaConDia(fin) : fechaSinAnio(fin)}`;
+}
+
+/** jueves 19 de noviembre */
+function fechaSinAnio(iso: string): string {
+  const { mes, dia } = partes(iso);
+  return `${diaSemana(iso)} ${dia} de ${MESES[mes - 1]}`;
+}
+
+/** «Jueves 19/11», para las filas de horas por día. */
+export function diaCorto(iso: string): string {
+  const { mes, dia } = partes(iso);
+  const semana = diaSemana(iso);
+  return `${semana.charAt(0).toUpperCase()}${semana.slice(1)} ${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}`;
+}
+
+function sumarDias(iso: string, n: number): string {
+  const { anio, mes, dia } = partes(iso);
+  return new Date(Date.UTC(anio, mes - 1, dia + n)).toISOString().slice(0, 10);
+}
+
+/** Más días que esto no se piden con horas por día (no cabría en la hoja). */
+export const MAX_DIAS_HORARIO = 31;
+
+/** Cada fecha del primer al último día; vacío si no es un rango o pasa del máximo. */
+export function diasEntre(inicio: string, fin: string): string[] {
+  if (!inicio || !fin || fin <= inicio) return [];
+  const dias: string[] = [];
+  for (let i = 0; i <= MAX_DIAS_HORARIO; i++) {
+    const iso = sumarDias(inicio, i);
+    if (iso > fin) return dias;
+    dias.push(iso);
+  }
+  return [];
+}
+
+/** Horas por día que aplican: de varios días, dentro del rango y con inicio y fin. */
+export function horasPorDia(d: { fecha: string; fechaFin: string; horarioDias?: HorarioDia[] }): HorarioDia[] {
+  if (!esVariosDias(d)) return [];
+  return (d.horarioDias ?? [])
+    .filter((h) => h.fecha >= d.fecha && h.fecha <= d.fechaFin && h.horaInicio && h.horaFin)
+    .sort((a, b) => a.fecha.localeCompare(b.fecha));
 }
 
 /** Cierre del formato del núcleo: «a los 04 días del mes de Noviembre del 2026». */
@@ -288,6 +326,45 @@ function conEvento(inicio: string, generico: Generico, nombre: string, resto: (a
 
 const plural = (a: Articulo) => a === 'los' || a === 'las';
 
+interface GrupoHoras {
+  desde: string;
+  hasta: string;
+  horaInicio: string;
+  horaFin: string;
+}
+
+/** Días seguidos con las mismas horas van juntos: «del lunes 16 al jueves 19 de noviembre». */
+function agruparHoras(dias: HorarioDia[]): GrupoHoras[] {
+  const grupos: GrupoHoras[] = [];
+  for (const d of dias) {
+    const ultimo = grupos.at(-1);
+    const igual = ultimo && ultimo.horaInicio === d.horaInicio && ultimo.horaFin === d.horaFin;
+    if (ultimo && igual && sumarDias(ultimo.hasta, 1) === d.fecha) ultimo.hasta = d.fecha;
+    else grupos.push({ desde: d.fecha, hasta: d.fecha, horaInicio: d.horaInicio, horaFin: d.horaFin });
+  }
+  return grupos;
+}
+
+/**
+ * Horario y lugar tras las fechas. Con horas por día: «…, en el Liceo X, con el
+ * siguiente horario: el jueves 19 de noviembre, entre las 2:00 pm y las 6:00 pm;
+ * y el viernes 20 de noviembre, entre las 8:00 am y las 12:00 pm». Si resultan
+ * iguales todos los días, queda como el horario diario de siempre.
+ */
+function horarioDelEvento(c: DatosDocumento, varios: boolean, lugar: string): string {
+  const grupos = agruparHoras(horasPorDia(c));
+  const entre = (g: GrupoHoras) => `entre ${conArticulo(g.horaInicio)} y ${conArticulo(g.horaFin)}`;
+  if (grupos.length === 1 && grupos[0].desde === c.fecha && grupos[0].hasta === c.fechaFin) {
+    return `, en el horario diario comprendido ${entre(grupos[0])}${lugar}`;
+  }
+  if (!grupos.length) return `${textoHorario(c, varios)}${lugar}`;
+  const partes = grupos.map(
+    (g) => `${g.desde === g.hasta ? `el ${fechaSinAnio(g.desde)}` : rangoFechas(g.desde, g.hasta, false)}, ${entre(g)}`
+  );
+  const lista = partes.length === 1 ? partes[0] : `${partes.slice(0, -1).join('; ')}; y ${partes.at(-1)}`;
+  return `${lugar}, con el siguiente horario: ${lista}`;
+}
+
 /**
  * Concierto, jornada o ensayo, de uno o varios días. El tiempo verbal depende de
  * la fecha de emisión: «participará en el ENCUENTRO REGIONAL DE ORQUESTAS a
@@ -298,7 +375,7 @@ function parrafoEvento(c: DatosDocumento, elCual: string, fechaEmision: string):
   const varios = esVariosDias(c);
   const fechas = varios ? rangoFechas(c.fecha, c.fechaFin) : `el día ${fechaConDia(c.fecha)}`;
   const lugar = c.lugar.trim() ? `, en ${c.lugar.trim()}` : '';
-  const cuando = `${fechas}${textoHorario(c, varios)}${lugar}.`;
+  const cuando = `${fechas}${horarioDelEvento(c, varios, lugar)}.`;
   const t = tiempoDe(c.fecha, varios ? c.fechaFin : '', fechaEmision);
   const nombre = c.eventoNombre.trim();
   const seRealiza = (a: Articulo) => ` que se ${plural(a) ? 'realizan' : 'realiza'} ${cuando}`;

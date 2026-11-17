@@ -1104,6 +1104,15 @@ input[type='radio'] {
   max-width: 24rem;
 }
 
+/* Horas por día: la fecha como título de la fila y debajo Desde / Hasta. */
+.horario-fila.horario-fila-dia .horario-celda-fecha:first-child {
+  flex: 1 1 100%;
+  padding-top: 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
 .campos-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

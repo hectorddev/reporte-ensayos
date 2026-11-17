@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useFieldArray, type RegisterOptions, type UseFormReturn } from 'react-hook-form';
 import { AGRUPACIONES } from '../../../lib/datosEstaticos';
 import { CampoFecha } from './CampoFecha';
 import { CampoHora } from './CampoHora';
 import { ResumenPlantilla } from './ResumenPlantilla';
-import { esMenorDeEdad, hoyIso, nombrePersona } from '../lib/textoConstancia';
+import { diaCorto, diasEntre, esMenorDeEdad, esVariosDias, hoyIso, nombrePersona } from '../lib/textoConstancia';
 import {
   DIAS_SEMANA,
   FILA_HORARIO_VACIA,
@@ -50,7 +50,13 @@ function FechaControlada({ form, name, rules, min, max }: PropsFecha) {
   );
 }
 
-type CampoDeHora = 'horaInicio' | 'horaFin' | `horario.${number}.horaInicio` | `horario.${number}.horaFin`;
+type CampoDeHora =
+  | 'horaInicio'
+  | 'horaFin'
+  | `horario.${number}.horaInicio`
+  | `horario.${number}.horaFin`
+  | `horarioDias.${number}.horaInicio`
+  | `horarioDias.${number}.horaFin`;
 
 interface PropsHora {
   form: Form;
@@ -304,6 +310,13 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
     if (!varios) {
       setValue('fechaFin', '');
       clearErrors('fechaFin');
+      // Si tenía horas por día, las del primer día pasan a ser las del único día.
+      const [primero] = form.getValues('horarioDias') ?? [];
+      if (primero) {
+        setValue('horaInicio', primero.horaInicio);
+        setValue('horaFin', primero.horaFin);
+      }
+      setValue('horarioDias', []);
     }
   };
   const horario = useFieldArray({
@@ -452,7 +465,7 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
               {variosDias && (
                 <p className="fechas-ayuda">
                   Indica el primer y el último día. La constancia dirá, por ejemplo: «del viernes 13 al domingo 15 de
-                  noviembre», con el mismo horario para cada día.
+                  noviembre».
                 </p>
               )}
             </div>
@@ -484,22 +497,8 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
               </div>
             )}
 
-            <div>
-              <label htmlFor="horaInicio">Hora de inicio{variosDias ? ' de cada día' : ''} (opcional)</label>
-              <HoraControlada form={form} name="horaInicio" id="horaInicio" etiqueta="Hora de inicio" rules={{ deps: ['horaFin'] }} />
-            </div>
-
-            <div>
-              <label htmlFor="horaFin">Hora de fin{variosDias ? ' de cada día' : ''} (opcional)</label>
-              <HoraControlada
-                form={form}
-                name="horaFin"
-                id="horaFin"
-                etiqueta="Hora de fin"
-                rules={{ validate: (v) => finDespuesDeInicio(form.getValues('horaInicio'))(v) }}
-              />
-              <MensajeError mensaje={errors.horaFin?.message} />
-            </div>
+            {/* Al cambiar entre uno y varios días se vuelve a preguntar por el horario. */}
+            <HorasEvento key={String(variosDias)} form={form} variosDias={variosDias} />
 
             <div className="campo-ancho">
               <label htmlFor="lugar">Lugar</label>
@@ -515,6 +514,145 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
         </>
       )}
     </section>
+  );
+}
+
+/**
+ * Horas de la actividad: unas para todos los días o, si dura varios días y
+ * cambian, una fila por fecha (se arman solas a partir del primer y último día).
+ */
+function HorasEvento({ form, variosDias }: { form: Form; variosDias: boolean }) {
+  const {
+    control,
+    watch,
+    getValues,
+    setValue,
+    formState: { errors },
+  } = form;
+  const fechaInicio = watch('fecha');
+  const fechaFin = watch('fechaFin');
+  const { fields, replace } = useFieldArray({ control, name: 'horarioDias' });
+  const [porDiaElegido, setPorDiaElegido] = useState<boolean | null>(null);
+  const fechas = variosDias ? diasEntre(fechaInicio, fechaFin) : [];
+  // Rango válido pero de más de un mes: no se ofrecen horas por día.
+  const muyLargo = variosDias && esVariosDias({ fecha: fechaInicio, fechaFin }) && !fechas.length;
+  const porDia = variosDias && !muyLargo && (porDiaElegido ?? fields.length > 0);
+  const claveFechas = fechas.join(',');
+
+  // Si cambian el primer o el último día, se agregan o quitan filas y se
+  // conservan las horas ya escritas.
+  useEffect(() => {
+    if (!porDia || !claveFechas) return;
+    const actuales = getValues('horarioDias') ?? [];
+    if (actuales.map((a) => a.fecha).join(',') === claveFechas) return;
+    replace(
+      claveFechas.split(',').map((fecha) => actuales.find((a) => a.fecha === fecha) ?? { fecha, horaInicio: '', horaFin: '' })
+    );
+  }, [porDia, claveFechas, getValues, replace]);
+
+  const elegirPorDia = (si: boolean) => {
+    setPorDiaElegido(si);
+    if (si) {
+      // Se parte de las horas que ya tenía: basta con cambiar el día distinto.
+      const horaInicio = getValues('horaInicio');
+      const horaFin = getValues('horaFin');
+      replace(fechas.map((fecha) => ({ fecha, horaInicio, horaFin })));
+      setValue('horaInicio', '');
+      setValue('horaFin', '');
+    } else {
+      const [primero] = getValues('horarioDias') ?? [];
+      if (primero) {
+        setValue('horaInicio', primero.horaInicio);
+        setValue('horaFin', primero.horaFin);
+      }
+      replace([]);
+    }
+  };
+
+  return (
+    <>
+      {variosDias && !muyLargo && (
+        <div className="campo-ancho">
+          <fieldset className="opciones-botones opciones-duracion">
+            <legend>¿El horario es igual todos los días?</legend>
+            {(
+              [
+                [false, 'Sí, igual'],
+                [true, 'No, cambia'],
+              ] as const
+            ).map(([valor, texto]) => (
+              <label key={texto} className={porDia === valor ? 'activo' : ''}>
+                <input type="radio" name="horarioPorDia" checked={porDia === valor} onChange={() => elegirPorDia(valor)} />
+                {texto}
+              </label>
+            ))}
+          </fieldset>
+        </div>
+      )}
+
+      {porDia ? (
+        <div className="campo-ancho">
+          {fields.length ? (
+            <>
+              <p className="fechas-ayuda">Indica la hora de inicio y de fin de cada día.</p>
+              <div className="horario-filas">
+                {fields.map((fila, i) => (
+                  <div key={fila.id} className="horario-fila horario-fila-dia">
+                    <strong className="horario-celda horario-celda-fecha">{diaCorto(fila.fecha)}</strong>
+                    <div className="horario-celda">
+                      <span>Desde</span>
+                      <HoraControlada
+                        form={form}
+                        name={`horarioDias.${i}.horaInicio`}
+                        id={`dia-${i}-inicio`}
+                        etiqueta={`${diaCorto(fila.fecha)}, desde`}
+                        rules={{ required: 'Falta la hora de inicio', deps: [`horarioDias.${i}.horaFin`] }}
+                      />
+                      <MensajeError mensaje={errors.horarioDias?.[i]?.horaInicio?.message} />
+                    </div>
+                    <div className="horario-celda">
+                      <span>Hasta</span>
+                      <HoraControlada
+                        form={form}
+                        name={`horarioDias.${i}.horaFin`}
+                        id={`dia-${i}-fin`}
+                        etiqueta={`${diaCorto(fila.fecha)}, hasta`}
+                        rules={{
+                          required: 'Falta la hora de fin',
+                          validate: (v) => finDespuesDeInicio(getValues(`horarioDias.${i}.horaInicio`))(v),
+                        }}
+                      />
+                      <MensajeError mensaje={errors.horarioDias?.[i]?.horaFin?.message} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="fechas-ayuda">Primero indica el primer y el último día: aquí aparecerá cada día.</p>
+          )}
+        </div>
+      ) : (
+        <>
+          <div>
+            <label htmlFor="horaInicio">Hora de inicio{variosDias ? ' de cada día' : ''} (opcional)</label>
+            <HoraControlada form={form} name="horaInicio" id="horaInicio" etiqueta="Hora de inicio" rules={{ deps: ['horaFin'] }} />
+          </div>
+
+          <div>
+            <label htmlFor="horaFin">Hora de fin{variosDias ? ' de cada día' : ''} (opcional)</label>
+            <HoraControlada
+              form={form}
+              name="horaFin"
+              id="horaFin"
+              etiqueta="Hora de fin"
+              rules={{ validate: (v) => finDespuesDeInicio(getValues('horaInicio'))(v) }}
+            />
+            <MensajeError mensaje={errors.horaFin?.message} />
+          </div>
+        </>
+      )}
+    </>
   );
 }
 

@@ -1,4 +1,4 @@
-import { esMenorDeEdad, esVariosDias, nombrePersona } from '../lib/textoConstancia';
+import { MAX_DIAS_HORARIO, esMenorDeEdad, esVariosDias, horasPorDia, nombrePersona } from '../lib/textoConstancia';
 
 export type TipoConstancia = 'horario' | 'pertenencia' | 'concierto' | 'jornada' | 'ensayo';
 export type EstadoConstancia = 'pendiente' | 'aprobada' | 'rechazada';
@@ -51,6 +51,13 @@ export interface FilaHorario {
   actividad: string;
 }
 
+/** Horas de un día concreto de una actividad de varios días. */
+export interface HorarioDia {
+  fecha: string; // AAAA-MM-DD
+  horaInicio: string; // HH:MM
+  horaFin: string;
+}
+
 /**
  * Lo que llena quien solicita. Las fechas van en AAAA-MM-DD.
  * Nombre y cédula del representante solo aplican si el estudiante es menor de
@@ -80,6 +87,8 @@ export interface DatosSolicitud {
   fechaFin: string;
   horaInicio: string;
   horaFin: string;
+  /** Varios días con horas distintas; vacío = mismas horas (horaInicio/horaFin) cada día. */
+  horarioDias: HorarioDia[];
   lugar: string;
   /** Nota para la coordinación; no se imprime. */
   notas: string;
@@ -121,6 +130,7 @@ export const CAMPOS_PLANTILLA = [
   'fechaFin',
   'horaInicio',
   'horaFin',
+  'horarioDias',
   'lugar',
 ] as const satisfies readonly (keyof DatosSolicitud)[];
 
@@ -194,6 +204,7 @@ export const SOLICITUD_VACIA: DatosSolicitud = {
   fechaFin: '',
   horaInicio: '',
   horaFin: '',
+  horarioDias: [],
   lugar: '',
   notas: '',
 };
@@ -206,6 +217,8 @@ export const SOLICITUD_VACIA: DatosSolicitud = {
 export function limpiarSolicitud(d: DatosSolicitud): DatosSolicitud {
   const evento = d.tipo === 'concierto' || d.tipo === 'jornada' || d.tipo === 'ensayo';
   const menor = esMenorDeEdad(d.estudianteFechaNacimiento);
+  // Horas por día: solo las de días dentro del rango; entonces no hay horas comunes.
+  const porDia = evento ? horasPorDia(d) : [];
   return {
     ...d,
     estudianteNombre: nombrePersona(d.estudianteNombre),
@@ -217,8 +230,9 @@ export function limpiarSolicitud(d: DatosSolicitud): DatosSolicitud {
     fecha: evento ? d.fecha : '',
     // Cualquier actividad puede durar varios días; si no, sin último día.
     fechaFin: evento && esVariosDias(d) ? d.fechaFin : '',
-    horaInicio: evento ? d.horaInicio : '',
-    horaFin: evento ? d.horaFin : '',
+    horaInicio: evento && !porDia.length ? d.horaInicio : '',
+    horaFin: evento && !porDia.length ? d.horaFin : '',
+    horarioDias: porDia,
     lugar: evento ? d.lugar : '',
   };
 }
@@ -251,6 +265,16 @@ export function datosDeSolicitud(origen: Record<string, unknown>): DatosSolicitu
       horaInicio: texto(fila.horaInicio, ''),
       horaFin: texto(fila.horaFin, ''),
       actividad: texto(fila.actividad, ''),
+    };
+  });
+
+  const dias = Array.isArray(origen.horarioDias) ? origen.horarioDias : [];
+  datos.horarioDias = dias.slice(0, MAX_DIAS_HORARIO).map((f) => {
+    const dia = (f ?? {}) as Record<string, unknown>;
+    return {
+      fecha: texto(dia.fecha, ''),
+      horaInicio: texto(dia.horaInicio, ''),
+      horaFin: texto(dia.horaFin, ''),
     };
   });
   return datos as unknown as DatosSolicitud;
