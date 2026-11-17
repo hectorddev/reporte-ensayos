@@ -198,14 +198,15 @@ export function construirContenido(
     texto(`Por medio de la presente hago constar que ${sustantivo} `),
     negrita(c.estudianteNombre.trim().toUpperCase()),
   ];
-  let resto = edad !== null ? `, de ${edad} ${edad === 1 ? 'año' : 'años'} de edad` : '';
-  if (c.estudianteCedula.trim()) {
-    constar.push(texto(`${resto}, titular de la cédula de identidad `), negrita(c.estudianteCedula.trim()));
-    resto = '';
-  }
+  const edadTexto = edad !== null ? `, de ${edad} ${edad === 1 ? 'año' : 'años'} de edad` : '';
+  // Sin cédula (niños pequeños) la constancia lo indica con N/A en vez de omitirlo.
+  constar.push(
+    texto(`${edadTexto}, titular de la cédula de identidad `),
+    negrita(c.estudianteCedula.trim() || 'N/A')
+  );
   const instrumento = c.instrumento.trim();
   constar.push(
-    texto(`${resto}, es ${fem ? 'integrante activa' : 'integrante activo'} ${instrumento ? `de la cátedra de ${instrumento} ` : ''}en la agrupación `),
+    texto(`, es ${fem ? 'integrante activa' : 'integrante activo'} ${instrumento ? `de la cátedra de ${instrumento} ` : ''}en la agrupación `),
     negrita(`“${c.agrupacionNombre.trim()}”`),
     texto(` del ${NUCLEO}.`)
   );
