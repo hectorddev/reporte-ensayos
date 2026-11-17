@@ -1,4 +1,4 @@
-import { esMenorDeEdad } from '../lib/textoConstancia';
+import { esMenorDeEdad, nombrePersona } from '../lib/textoConstancia';
 
 export type TipoConstancia = 'horario' | 'pertenencia' | 'concierto' | 'jornada' | 'ensayo';
 export type EstadoConstancia = 'pendiente' | 'aprobada' | 'rechazada';
@@ -63,7 +63,8 @@ export interface DatosSolicitud {
   representanteTelefono: string;
   estudianteNombre: string;
   estudianteCedula: string;
-  estudianteGenero: Genero;
+  /** Vacío hasta que quien llena el formulario lo elige: así no queda uno por descuido. */
+  estudianteGenero: Genero | '';
   estudianteFechaNacimiento: string;
   agrupacionId: string;
   agrupacionNombre: string;
@@ -160,6 +161,8 @@ export interface Constancia extends Solicitud {
   fechaEmision: string;
   parrafoAdicional: string;
   entrega: EntregaConstancia;
+  /** Costo opcional al retirarla en la coordinación; solo va en el mensaje, no en el PDF. */
+  precio?: string;
   motivoRechazo: string;
   actualizadoEn: string;
 }
@@ -178,7 +181,7 @@ export const SOLICITUD_VACIA: DatosSolicitud = {
   representanteTelefono: '',
   estudianteNombre: '',
   estudianteCedula: '',
-  estudianteGenero: 'M',
+  estudianteGenero: '',
   estudianteFechaNacimiento: '',
   agrupacionId: '',
   agrupacionNombre: '',
@@ -197,14 +200,16 @@ export const SOLICITUD_VACIA: DatosSolicitud = {
 
 /**
  * Vacía los campos que no aplican: los del tipo no elegido (p. ej. tras cambiar
- * de tipo) y los del representante si el estudiante es mayor de edad.
+ * de tipo) y los del representante si el estudiante es mayor de edad. Los
+ * nombres de personas quedan como «Daviana Márquez».
  */
 export function limpiarSolicitud(d: DatosSolicitud): DatosSolicitud {
   const evento = d.tipo === 'concierto' || d.tipo === 'jornada' || d.tipo === 'ensayo';
   const menor = esMenorDeEdad(d.estudianteFechaNacimiento);
   return {
     ...d,
-    representanteNombre: menor ? d.representanteNombre : '',
+    estudianteNombre: nombrePersona(d.estudianteNombre),
+    representanteNombre: menor ? nombrePersona(d.representanteNombre) : '',
     representanteCedula: menor ? d.representanteCedula : '',
     horario: d.tipo === 'horario' ? d.horario : [],
     fechaIngreso: d.tipo === 'pertenencia' ? d.fechaIngreso : '',
@@ -235,7 +240,7 @@ export function datosDeSolicitud(origen: Record<string, unknown>): DatosSolicitu
     if (typeof porDefecto === 'string') datos[campo] = texto(origen[campo], porDefecto);
   }
   if (!TIPOS_VALIDOS.has(String(datos.tipo))) datos.tipo = SOLICITUD_VACIA.tipo;
-  if (datos.estudianteGenero !== 'F') datos.estudianteGenero = 'M';
+  if (datos.estudianteGenero !== 'F' && datos.estudianteGenero !== 'M') datos.estudianteGenero = '';
 
   const filas = Array.isArray(origen.horario) ? origen.horario : [];
   datos.horario = filas.slice(0, MAX_FILAS_HORARIO).map((f) => {

@@ -59,10 +59,23 @@ export function SolicitarConstancia({ plantilla = null }: Props) {
     return (
       <div className="constancia-enviada">
         <h2>¡Solicitud recibida!</h2>
-        <p>
-          Código: <strong>{enviada.codigo}</strong>. Avisa a la coordinación por WhatsApp: el mensaje ya
-          está escrito, solo pulsa <strong>enviar</strong>.
+        <p className="constancia-enviada-codigo">
+          Tu código: <strong>{enviada.codigo}</strong>
         </p>
+
+        <div className="paso-final">
+          <p>
+            <strong>Falta un último paso:</strong> avisar a la coordinación por WhatsApp.
+          </p>
+          <ol>
+            <li>Toca el botón verde «Avisar por WhatsApp».</li>
+            <li>Se abrirá WhatsApp con el mensaje ya escrito.</li>
+            <li>
+              Toca <strong>Enviar</strong>.
+            </li>
+          </ol>
+        </div>
+
         <a
           className="btn btn-primary btn-whatsapp"
           href={enviada.whatsapp}
@@ -77,22 +90,32 @@ export function SolicitarConstancia({ plantilla = null }: Props) {
             Si en WhatsApp el mensaje aparece repetido, borra el sobrante antes de enviar.
           </p>
         )}
-        <p className="fechas-ayuda">La coordinación te responderá al número que indicaste.</p>
+        <p className="fechas-ayuda">La coordinación te responderá a ese mismo número cuando la constancia esté lista.</p>
         <div className="constancia-enviada-acciones">
-          <button type="button" className="btn btn-secondary btn-sm" onClick={otraSolicitud}>
-            Hacer otra solicitud
+          <button type="button" className="btn btn-secondary" onClick={otraSolicitud}>
+            Pedir otra constancia
           </button>
         </div>
       </div>
     );
   }
 
+  const conErrores = form.formState.submitCount > 0 && Object.keys(form.formState.errors).length > 0;
+
   return (
     <form className="constancia-form" onSubmit={form.handleSubmit(onSubmit)} noValidate>
       <CamposSolicitud form={form} modo="representante" plantilla={plantilla} />
 
       {error && <div className="alert-error">{error}</div>}
+      {conErrores && (
+        <div className="alert-error" role="alert">
+          Faltan datos o hay algo por corregir. Revisa los campos marcados en rojo.
+        </div>
+      )}
 
+      <p className="fechas-ayuda antes-de-enviar">
+        Antes de enviar, revisa que nombres y cédulas estén bien escritos: así saldrán en la constancia.
+      </p>
       <button type="submit" className="btn btn-primary btn-bloque" disabled={form.formState.isSubmitting}>
         {form.formState.isSubmitting ? 'Enviando…' : 'Enviar solicitud'}
       </button>

@@ -137,6 +137,61 @@ function textoHorario(c: DatosDocumento, diario: boolean): string {
   return '';
 }
 
+/**
+ * Cédula con el mismo formato que la del firmante: «36944739», «V-36.944.739»
+ * → «N° 36.944.739»; extranjeros «E-…» → «N° E-12.345.678». Si no es una
+ * cédula de números (p. ej. un pasaporte) se respeta lo escrito.
+ */
+export function formatoCedula(cedula: string): string {
+  const limpia = cedula.trim().replace(/^(n\s*[°º]|no\.?)\s*/i, '');
+  if (!limpia) return '';
+  const partes = /^([VvEe])?[\s.-]*(\d[\d.\s]*)$/.exec(limpia);
+  if (!partes) return `N° ${limpia}`;
+  const conPuntos = partes[2].replace(/\D/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `N° ${partes[1]?.toUpperCase() === 'E' ? 'E-' : ''}${conPuntos}`;
+}
+
+const PALABRAS_MENORES = new Set(['a', 'al', 'con', 'de', 'del', 'e', 'el', 'en', 'la', 'las', 'los', 'o', 'para', 'por', 'u', 'y']);
+
+/**
+ * Mayúscula inicial en cada palabra de un nombre propio: «grupo escolar monseñor
+ * san miguel» → «Grupo Escolar Monseñor San Miguel». Artículos y preposiciones
+ * van en minúscula salvo al inicio, y lo escrito todo en mayúsculas (siglas
+ * como U.E.) se respeta.
+ */
+export function nombrePropio(linea: string): string {
+  let primera = true;
+  return linea.replace(/\S+/g, (palabra) => {
+    const esInicio = primera;
+    primera = false;
+    if (!/\p{Ll}/u.test(palabra)) return palabra;
+    const minuscula = palabra.toLowerCase();
+    if (!esInicio && PALABRAS_MENORES.has(minuscula)) return minuscula;
+    return palabra.replace(/\p{L}/u, (letra) => letra.toUpperCase());
+  });
+}
+
+const PARTICULAS_NOMBRE = new Set(['de', 'del', 'la', 'las', 'los', 'y']);
+
+/**
+ * Nombre de persona con la primera letra de cada palabra en mayúscula y el resto
+ * en minúscula: «DAVIANA MÁRQUEZ» o «daviana márquez» → «Daviana Márquez».
+ * «de», «del», «la»… quedan en minúscula: «María de los Ángeles».
+ */
+export function nombrePersona(nombre: string): string {
+  return nombre
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((palabra, i) => {
+      const minuscula = palabra.toLocaleLowerCase('es');
+      if (i > 0 && PARTICULAS_NOMBRE.has(minuscula)) return minuscula;
+      // También tras guion o apóstrofo: «Ana-María», «O'Connor».
+      return minuscula.replace(/(^|[-'’])(\p{L})/gu, (_, antes: string, letra: string) => antes + letra.toLocaleUpperCase('es'));
+    })
+    .join(' ');
+}
+
 function texto(t: string): Segmento {
   return { texto: t };
 }
@@ -202,7 +257,7 @@ export function construirContenido(
   // Sin cédula (niños pequeños) la constancia lo indica con N/A en vez de omitirlo.
   constar.push(
     texto(`${edadTexto}, titular de la cédula de identidad `),
-    negrita(c.estudianteCedula.trim() || 'N/A')
+    negrita(formatoCedula(c.estudianteCedula) || 'N/A')
   );
   const instrumento = c.instrumento.trim();
   constar.push(
@@ -285,7 +340,9 @@ export function construirContenido(
     .map((p) => [texto(p)]);
 
   return {
-    destinatario: c.destinatario.trim() ? [...c.destinatario.trim().split('\n'), 'Su despacho. -'] : [],
+    destinatario: c.destinatario.trim()
+      ? [...c.destinatario.trim().split('\n').map(nombrePropio), 'Su despacho. -']
+      : [],
     titulo: 'CONSTANCIA',
     parrafos: [suscribe, [texto('Reciban un Saludo deseándole éxito en sus funciones.')], constar, especifico],
     tabla,

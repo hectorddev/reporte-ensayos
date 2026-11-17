@@ -175,6 +175,7 @@ function crearSolicitud_(datos) {
   s.fechaEmision = '';
   s.parrafoAdicional = '';
   s.entrega = 'representante';
+  s.precio = '';
   s.motivoRechazo = '';
   s.actualizadoEn = s.creadoEn;
   guardar_('solicitudes', s);

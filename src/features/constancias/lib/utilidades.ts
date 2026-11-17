@@ -60,10 +60,11 @@ export function mensajeParaRepresentante(c: Constancia): string {
     const motivo = c.motivoRechazo ? `: ${c.motivoRechazo}` : '.';
     return `${saludo} La solicitud de constancia ${c.codigo} de ${c.estudianteNombre} no pudo ser aprobada${motivo}`;
   }
+  const precio = c.precio?.trim();
   const entrega =
     c.entrega === 'representante'
-      ? 'Se la enviamos en PDF por este chat para que la imprima.'
-      : 'Puede retirarla firmada y sellada en la coordinación.';
+      ? 'Le adjuntamos el PDF para que la imprima.'
+      : `Puede retirarla firmada y sellada en la coordinación.${precio ? ` Tiene un costo de ${precio}.` : ''}`;
   return `${saludo} La constancia ${c.codigo} de ${c.estudianteNombre} fue aprobada. ${entrega}`;
 }
 

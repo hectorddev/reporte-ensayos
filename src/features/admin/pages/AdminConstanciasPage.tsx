@@ -86,7 +86,7 @@ function Bandeja({ clave }: { clave: string }) {
         </select>
         <input
           type="search"
-          placeholder="Buscar por código, estudiante o representante"
+          placeholder="Buscar por nombre o código"
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           aria-label="Buscar"

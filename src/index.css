@@ -535,8 +535,23 @@ textarea {
 
 .error {
   color: #dc2626;
-  font-size: 0.875rem;
+  font-size: 0.95rem;
+  font-weight: 600;
   margin-top: 0.35rem;
+}
+
+/* Campo con error: borde rojo, para encontrarlo de un vistazo. */
+.campos-grid > div:has(> .error) :is(input:not([type='radio']), select, textarea),
+.campos-grid > div:has(> .error) .opciones-botones label {
+  border-color: #dc2626;
+}
+
+input[type='radio'] {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: #4f46e5;
 }
 
 .fechas-ensayo-picker {
@@ -567,8 +582,13 @@ textarea {
 
 .fechas-ayuda {
   margin: 0;
-  font-size: 0.875rem;
-  color: #64748b;
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+/* Ayuda bajo un campo. */
+:is(input, textarea, .campo-fecha, .error) + .fechas-ayuda {
+  margin-top: 0.35rem;
 }
 
 .calendario-mes {
@@ -1036,6 +1056,49 @@ textarea {
   margin: 0 0 0.75rem;
 }
 
+.constancia-form h3 + .fechas-ayuda {
+  margin: -0.35rem 0 0.9rem;
+}
+
+.antes-de-enviar {
+  margin: 0.25rem 0 0.75rem;
+}
+
+/* Elección entre pocas opciones (sexo): botones grandes, ninguna marcada de entrada. */
+.opciones-botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.opciones-botones legend {
+  margin-bottom: 0.4rem;
+  padding: 0;
+  font-weight: 600;
+}
+
+.opciones-botones label {
+  flex: 1 1 8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.6rem 0.85rem;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.opciones-botones label.activo {
+  border-color: #4f46e5;
+  background: #eef2ff;
+}
+
 .campos-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1086,6 +1149,18 @@ textarea {
 .tipo-card.activo {
   border-color: #4f46e5;
   background: #eef2ff;
+  box-shadow: 0 0 0 1px #4f46e5;
+}
+
+.tipo-card-marca {
+  align-self: flex-start;
+  margin-top: 0.35rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: #4f46e5;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .tipo-card-titulo {
@@ -1094,9 +1169,9 @@ textarea {
 }
 
 .tipo-card-desc {
-  font-size: 0.85rem;
-  line-height: 1.35;
-  color: #64748b;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: #475569;
 }
 
 .horario-filas {
@@ -1110,7 +1185,26 @@ textarea {
   display: grid;
   grid-template-columns: 1.1fr 1fr 1fr 1.6fr auto;
   gap: 0.5rem;
-  align-items: center;
+  align-items: end;
+}
+
+.horario-celda {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0;
+  font-weight: 400;
+}
+
+.horario-celda span {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.horario-quitar {
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
 }
 
 .constancia-enviada {
@@ -1123,6 +1217,51 @@ textarea {
 
 .constancia-enviada h2 {
   margin-top: 0;
+}
+
+.constancia-enviada-codigo {
+  font-size: 1.05rem;
+}
+
+.paso-final {
+  max-width: 30rem;
+  margin: 1rem auto 0.25rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  background: #f0fdf4;
+  text-align: left;
+}
+
+.paso-final p {
+  margin: 0 0 0.4rem;
+}
+
+.paso-final ol {
+  margin: 0;
+  padding-left: 1.3rem;
+}
+
+.paso-final li {
+  margin: 0.2rem 0;
+}
+
+.constancia-enviada .btn-whatsapp {
+  width: 100%;
+  max-width: 30rem;
+}
+
+/* Pasos al entrar a /constancias. */
+.pasos-solicitud {
+  margin: 0 0 1.5rem;
+  padding: 0.9rem 1rem 0.9rem 2.3rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.pasos-solicitud li {
+  margin: 0.2rem 0;
 }
 
 .btn-whatsapp {
@@ -1209,11 +1348,17 @@ textarea {
 
 .plantilla-card-libre {
   border-style: dashed;
-  border-color: #cbd5e1;
+  border-color: #94a3b8;
+}
+
+.plantilla-card-accion {
+  margin-top: 0.45rem;
+  color: #4f46e5;
+  font-weight: 700;
 }
 
 .volver-plantillas {
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .plantilla-admin {
@@ -1311,6 +1456,7 @@ h2 .estado-badge {
 
 a.btn {
   text-decoration: none;
+  text-align: center;
 }
 
 .admin-header .app-nav {
@@ -1367,6 +1513,14 @@ a.btn {
   gap: 0.5rem;
   margin: 0.3rem 0;
   font-weight: 400;
+}
+
+.campo-precio {
+  margin-top: 0.6rem;
+}
+
+.campo-precio .fechas-ayuda {
+  margin-top: 0.3rem;
 }
 
 .revision-acciones {
@@ -1688,8 +1842,10 @@ a.btn {
     display: block !important;
   }
 
-  .cerrar-panel.solo-angosta {
+  .cerrar-panel.solo-angosta,
+  .revision-acciones .btn.solo-angosta {
     display: inline-flex !important;
+    justify-content: center;
   }
 
   .revision-acciones .btn {
@@ -1792,6 +1948,8 @@ a.btn {
 
   .tabla-tarjetas td.celda-acciones .btn {
     flex: 1;
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
     text-align: center;
   }
 
@@ -1808,9 +1966,56 @@ a.btn {
     border-bottom: 1px solid #e2e8f0;
   }
 
-  .horario-fila select,
-  .horario-fila input[type='text'],
-  .horario-fila .btn {
+  /* Día y actividad a todo el ancho; desde/hasta lado a lado. */
+  .horario-fila .horario-celda:first-child,
+  .horario-fila .horario-celda:nth-child(4) {
     grid-column: 1 / -1;
   }
+
+  .horario-fila .horario-quitar {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+/* Acción que borra algo: visible pero sin competir con la acción principal. */
+.btn-peligro-suave {
+  border: 1px solid #fca5a5;
+  background: #fff;
+  color: #b91c1c;
+}
+
+.btn-peligro-suave:hover {
+  background: #fef2f2;
+}
+
+/* Revisión: el rechazo y la gestión, separados de la aprobación. */
+.caja-rechazo {
+  margin-top: 1.5rem;
+  padding-top: 1.1rem;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.caja-rechazo h4 {
+  margin: 0;
+  color: #991b1b;
+}
+
+.panel-coordinacion .caja-rechazo label {
+  margin-top: 0.5rem;
+}
+
+.caja-gestion {
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Constancia nueva: primero los datos, después la decisión. */
+.revision.desde-cero .constancia-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.revision.desde-cero .constancia-form [data-seccion='datos'] {
+  order: -1;
 }

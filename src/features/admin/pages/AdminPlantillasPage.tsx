@@ -93,7 +93,7 @@ function ListaPlantillas({ clave }: { clave: string }) {
               <Link to={`/admin/constancias/plantillas/${p.codigo}`} className="btn btn-secondary btn-sm">
                 Editar
               </Link>
-              <button type="button" className="btn btn-danger btn-sm" onClick={() => eliminar(p)}>
+              <button type="button" className="btn btn-peligro-suave btn-sm" onClick={() => eliminar(p)}>
                 Eliminar
               </button>
             </div>

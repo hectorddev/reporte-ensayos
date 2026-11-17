@@ -2,7 +2,7 @@ import { Controller, useFieldArray, type RegisterOptions, type UseFormReturn } f
 import { AGRUPACIONES } from '../../../lib/datosEstaticos';
 import { CampoFecha } from './CampoFecha';
 import { ResumenPlantilla } from './ResumenPlantilla';
-import { esMenorDeEdad, hoyIso } from '../lib/textoConstancia';
+import { esMenorDeEdad, hoyIso, nombrePersona } from '../lib/textoConstancia';
 import {
   DIAS_SEMANA,
   FILA_HORARIO_VACIA,
@@ -59,7 +59,11 @@ interface Props {
 export function CamposSolicitud({ form, modo, plantilla }: Props) {
   return (
     <>
-      {plantilla ? <ResumenPlantilla plantilla={plantilla} /> : <SeccionTipo form={form} />}
+      {plantilla ? (
+        <ResumenPlantilla plantilla={plantilla} />
+      ) : (
+        <SeccionTipo form={form} titulo={modo === 'coordinacion' ? 'Tipo de constancia' : undefined} />
+      )}
       <SeccionEstudiante form={form} modo={modo} agrupacionFija={!!plantilla?.datos.agrupacionId} />
       {(!plantilla || plantilla.datos.tipo === 'pertenencia') && <SeccionDetalle form={form} uso="solicitud" />}
       <SeccionDestinatario form={form} />
@@ -79,6 +83,7 @@ export function SeccionTipo({ form, titulo = '¿Qué constancia necesitas?' }: {
             <input type="radio" value={t.id} {...form.register('tipo')} />
             <span className="tipo-card-titulo">{t.titulo}</span>
             <span className="tipo-card-desc">{t.descripcion}</span>
+            {tipo === t.id && <span className="tipo-card-marca">✓ Elegida</span>}
           </label>
         ))}
       </div>
@@ -111,7 +116,7 @@ export function CampoAgrupacion({ form, modo, opcional = false }: PropsAgrupacio
   return (
     <>
       <div>
-        <label htmlFor="agrupacionId">Agrupación{opcional ? '' : ' *'}</label>
+        <label htmlFor="agrupacionId">Agrupación{opcional ? ' (opcional)' : ''}</label>
         <select
           id="agrupacionId"
           {...register('agrupacionId', {
@@ -133,7 +138,7 @@ export function CampoAgrupacion({ form, modo, opcional = false }: PropsAgrupacio
       {verNombre && (
         <div className="campo-ancho">
           <label htmlFor="agrupacionNombre">
-            {modo === 'coordinacion' ? 'Agrupación (como aparece en la constancia) *' : '¿Cuál agrupación? *'}
+            {modo === 'coordinacion' ? 'Agrupación (como aparece en la constancia)' : '¿Cuál agrupación?'}
           </label>
           <input
             id="agrupacionNombre"
@@ -151,33 +156,55 @@ export function CampoAgrupacion({ form, modo, opcional = false }: PropsAgrupacio
 function SeccionEstudiante({ form, modo, agrupacionFija }: { form: Form; modo: Modo; agrupacionFija: boolean }) {
   const {
     register,
+    watch,
+    setValue,
     formState: { errors },
   } = form;
+  const genero = watch('estudianteGenero');
   return (
     <section>
       <h3>Datos del estudiante</h3>
       <div className="campos-grid">
         <div className="campo-ancho">
-          <label htmlFor="estudianteNombre">Nombres y apellidos *</label>
+          <label htmlFor="estudianteNombre">Nombres y apellidos</label>
           <input
             id="estudianteNombre"
             type="text"
             placeholder="Ej: María José Pérez Gómez"
-            {...register('estudianteNombre', { required: 'Escribe el nombre completo' })}
+            {...register('estudianteNombre', {
+              required: 'Escribe el nombre completo',
+              // Al salir del campo: «DAVIANA MÁRQUEZ» → «Daviana Márquez», para que se vea cómo queda.
+              onBlur: (e) => setValue('estudianteNombre', nombrePersona(e.target.value)),
+            })}
           />
+          <p className="fechas-ayuda">Tal como aparece en la cédula o partida de nacimiento: así saldrá en la constancia.</p>
           <MensajeError mensaje={errors.estudianteNombre?.message} />
         </div>
 
         <div>
-          <label htmlFor="estudianteGenero">Sexo *</label>
-          <select id="estudianteGenero" {...register('estudianteGenero')}>
-            <option value="M">Masculino</option>
-            <option value="F">Femenino</option>
-          </select>
+          <fieldset className="opciones-botones">
+            <legend>Sexo</legend>
+            {(
+              [
+                ['M', 'Masculino'],
+                ['F', 'Femenino'],
+              ] as const
+            ).map(([valor, texto]) => (
+              <label key={valor} className={genero === valor ? 'activo' : ''}>
+                <input
+                  type="radio"
+                  value={valor}
+                  {...register('estudianteGenero', { required: 'Indica el sexo del estudiante' })}
+                />
+                {texto}
+              </label>
+            ))}
+          </fieldset>
+          <MensajeError mensaje={errors.estudianteGenero?.message} />
         </div>
 
         <div>
-          <label htmlFor="estudianteFechaNacimiento">Fecha de nacimiento *</label>
+          <label htmlFor="estudianteFechaNacimiento">Fecha de nacimiento</label>
           <FechaControlada
             form={form}
             name="estudianteFechaNacimiento"
@@ -187,24 +214,26 @@ function SeccionEstudiante({ form, modo, agrupacionFija }: { form: Form; modo: M
               validate: (v) => v <= hoyIso() || 'La fecha de nacimiento no puede ser futura',
             }}
           />
+          <p className="fechas-ayuda">Día, mes y año. Ej: 25/03/2012</p>
           <MensajeError mensaje={errors.estudianteFechaNacimiento?.message} />
         </div>
 
         <div>
-          <label htmlFor="estudianteCedula">Cédula del estudiante</label>
+          <label htmlFor="estudianteCedula">Cédula del estudiante (opcional)</label>
           <input
             id="estudianteCedula"
             type="text"
             inputMode="numeric"
-            placeholder="V-30.123.456 (vacío si no posee)"
+            placeholder="V-30.123.456"
             {...register('estudianteCedula')}
           />
+          <p className="fechas-ayuda">Si no tiene cédula, déjalo vacío.</p>
         </div>
 
         {!agrupacionFija && <CampoAgrupacion form={form} modo={modo} />}
 
         <div>
-          <label htmlFor="instrumento">Fila o instrumento</label>
+          <label htmlFor="instrumento">Instrumento o fila (opcional)</label>
           <input
             id="instrumento"
             type="text"
@@ -252,36 +281,39 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
           <div className="horario-filas">
             {horario.fields.map((fila, i) => (
               <div key={fila.id} className="horario-fila">
-                <select aria-label="Día" {...register(`horario.${i}.dia`)}>
-                  {DIAS_SEMANA.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="time"
-                  aria-label="Hora de inicio"
-                  {...register(`horario.${i}.horaInicio`, { required: true })}
-                />
-                <input
-                  type="time"
-                  aria-label="Hora de fin"
-                  {...register(`horario.${i}.horaFin`, { required: true })}
-                />
-                <input
-                  type="text"
-                  aria-label="Actividad"
-                  placeholder="Ensayo General"
-                  {...register(`horario.${i}.actividad`, { required: true })}
-                />
+                <label className="horario-celda">
+                  <span>Día</span>
+                  <select {...register(`horario.${i}.dia`)}>
+                    {DIAS_SEMANA.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="horario-celda">
+                  <span>Desde</span>
+                  <input type="time" {...register(`horario.${i}.horaInicio`, { required: true })} />
+                </label>
+                <label className="horario-celda">
+                  <span>Hasta</span>
+                  <input type="time" {...register(`horario.${i}.horaFin`, { required: true })} />
+                </label>
+                <label className="horario-celda">
+                  <span>Actividad</span>
+                  <input
+                    type="text"
+                    placeholder="Ensayo General"
+                    {...register(`horario.${i}.actividad`, { required: true })}
+                  />
+                </label>
                 <button
                   type="button"
-                  className="btn btn-secondary btn-sm"
+                  className="btn btn-peligro-suave btn-sm horario-quitar"
                   onClick={() => horario.remove(i)}
                   aria-label={`Quitar ${fila.dia}`}
                 >
-                  Quitar
+                  Quitar día
                 </button>
               </div>
             ))}
@@ -338,14 +370,14 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
             </div>
 
             <div>
-              <label htmlFor="fecha">{tipo === 'jornada' ? 'Desde *' : 'Fecha *'}</label>
+              <label htmlFor="fecha">{tipo === 'jornada' ? 'Desde' : 'Fecha'}</label>
               <FechaControlada form={form} name="fecha" rules={{ required: 'Indica la fecha' }} />
               <MensajeError mensaje={errors.fecha?.message} />
             </div>
 
             {tipo === 'jornada' && (
               <div>
-                <label htmlFor="fechaFin">Hasta *</label>
+                <label htmlFor="fechaFin">Hasta</label>
                 <FechaControlada
                   form={form}
                   name="fechaFin"
@@ -360,17 +392,17 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
             )}
 
             <div>
-              <label htmlFor="horaInicio">Hora de inicio</label>
+              <label htmlFor="horaInicio">Hora de inicio (opcional)</label>
               <input id="horaInicio" type="time" {...register('horaInicio')} />
             </div>
 
             <div>
-              <label htmlFor="horaFin">Hora de fin</label>
+              <label htmlFor="horaFin">Hora de fin (opcional)</label>
               <input id="horaFin" type="time" {...register('horaFin')} />
             </div>
 
             <div className="campo-ancho">
-              <label htmlFor="lugar">Lugar *</label>
+              <label htmlFor="lugar">Lugar</label>
               <input
                 id="lugar"
                 type="text"
@@ -392,7 +424,7 @@ function SeccionDestinatario({ form }: { form: Form }) {
       <h3>¿Para quién es la constancia?</h3>
       <div className="campos-grid">
         <div className="campo-ancho">
-          <label htmlFor="destinatario">Institución o persona a quien va dirigida</label>
+          <label htmlFor="destinatario">Institución o persona a quien va dirigida (opcional)</label>
           <input
             id="destinatario"
             type="text"
@@ -411,16 +443,22 @@ function SeccionContacto({ form }: { form: Form }) {
   const {
     register,
     watch,
+    setValue,
     formState: { errors },
   } = form;
-  const menor = esMenorDeEdad(watch('estudianteFechaNacimiento'));
+  const nacimiento = watch('estudianteFechaNacimiento');
+  const menor = esMenorDeEdad(nacimiento);
 
   return (
     <section>
       {menor ? (
         <>
           <h3>Datos del representante</h3>
-          <p className="fechas-ayuda">El estudiante es menor de edad: lo solicita su representante.</p>
+          <p className="fechas-ayuda">
+            {nacimiento
+              ? 'El estudiante es menor de edad: escribe los datos de su representante (madre, padre o responsable).'
+              : 'Si el estudiante es menor de edad, escribe los datos de su representante (madre, padre o responsable).'}
+          </p>
         </>
       ) : (
         <>
@@ -432,17 +470,20 @@ function SeccionContacto({ form }: { form: Form }) {
         {menor && (
           <>
             <div className="campo-ancho">
-              <label htmlFor="representanteNombre">Nombres y apellidos del representante *</label>
+              <label htmlFor="representanteNombre">Nombres y apellidos del representante</label>
               <input
                 id="representanteNombre"
                 type="text"
-                {...register('representanteNombre', { required: 'Escribe el nombre del representante' })}
+                {...register('representanteNombre', {
+                  required: 'Escribe el nombre del representante',
+                  onBlur: (e) => setValue('representanteNombre', nombrePersona(e.target.value)),
+                })}
               />
               <MensajeError mensaje={errors.representanteNombre?.message} />
             </div>
 
             <div>
-              <label htmlFor="representanteCedula">Cédula del representante *</label>
+              <label htmlFor="representanteCedula">Cédula del representante</label>
               <input
                 id="representanteCedula"
                 type="text"
@@ -459,7 +500,7 @@ function SeccionContacto({ form }: { form: Form }) {
         )}
 
         <div>
-          <label htmlFor="representanteTelefono">Teléfono (WhatsApp) *</label>
+          <label htmlFor="representanteTelefono">Teléfono con WhatsApp</label>
           <input
             id="representanteTelefono"
             type="tel"
@@ -467,15 +508,17 @@ function SeccionContacto({ form }: { form: Form }) {
             placeholder="0414-1234567"
             {...register('representanteTelefono', {
               required: 'Escribe un teléfono',
-              validate: minDigitos(10, 'Teléfono inválido'),
+              validate: minDigitos(10, 'Revisa el teléfono. Ej: 0414-1234567'),
             })}
           />
+          <p className="fechas-ayuda">A este número te avisaremos cuando la constancia esté lista.</p>
           <MensajeError mensaje={errors.representanteTelefono?.message} />
         </div>
 
         <div className="campo-ancho">
-          <label htmlFor="notas">Nota para la coordinación (no sale en la constancia)</label>
-          <textarea id="notas" placeholder="Opcional" {...register('notas')} />
+          <label htmlFor="notas">Nota para la coordinación (opcional)</label>
+          <textarea id="notas" {...register('notas')} />
+          <p className="fechas-ayuda">No sale en la constancia.</p>
         </div>
       </div>
     </section>

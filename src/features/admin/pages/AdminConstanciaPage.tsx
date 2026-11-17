@@ -108,6 +108,7 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
   const [fechaEmision, setFechaEmision] = useState(inicial.fechaEmision || hoyIso());
   const [parrafoAdicional, setParrafoAdicional] = useState(inicial.parrafoAdicional);
   const [entrega, setEntrega] = useState<EntregaConstancia>(inicial.entrega);
+  const [precio, setPrecio] = useState(inicial.precio ?? '');
   const [motivoRechazo, setMotivoRechazo] = useState(inicial.motivoRechazo);
   const [ocupado, setOcupado] = useState(false);
   const [pdf, setPdf] = useState<{ blob: Blob; nombre: string; huella: string } | null>(null);
@@ -149,6 +150,7 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
     fechaEmision,
     parrafoAdicional,
     entrega,
+    precio: entrega === 'coordinacion' ? precio.trim() : '',
     motivoRechazo: nuevoEstado === 'rechazada' ? motivoRechazo.trim() : '',
   });
 
@@ -221,16 +223,33 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
     });
   };
 
-  const compartirPdf = async () => {
+  const telefono = datos.representanteTelefono.trim();
+  const destinatario = datos.representanteNombre.trim() || datos.estudianteNombre.trim();
+  const mensaje = codigo && estado !== 'pendiente' ? mensajeParaRepresentante(actual(estado)) : '';
+  // Aprobada para el representante: el mensaje viaja junto con el PDF, no aparte.
+  const enviaPdf = entrega === 'representante' && estado === 'aprobada';
+
+  /** PDF y mensaje en un mismo envío (hoja de compartir del celular → WhatsApp). */
+  const enviarPdf = async () => {
     if (!pdfVigente) return;
+    const archivo = new File([pdfVigente.blob], pdfVigente.nombre, { type: 'application/pdf' });
+    // Respaldo: algunas apps descartan el texto al recibir un archivo. Se lanza
+    // antes de compartir y sin esperar, para no perder el permiso del clic.
+    navigator.clipboard?.writeText(mensaje).catch(() => {});
     try {
-      const archivo = new File([pdfVigente.blob], pdfVigente.nombre, { type: 'application/pdf' });
-      await navigator.share({ files: [archivo], title: pdfVigente.nombre });
+      await navigator.share({ files: [archivo], text: mensaje });
     } catch (err) {
       if (!(err instanceof DOMException && err.name === 'AbortError')) {
         setError('No se pudo compartir. Descarga el PDF y envíalo manualmente.');
       }
     }
+  };
+
+  /** Sin hoja de compartir (PC): descarga el PDF y abre el chat con el mensaje listo. */
+  const descargarYAbrirChat = () => {
+    if (!pdfVigente) return;
+    descargarArchivo(pdfVigente.blob, pdfVigente.nombre);
+    window.open(enlaceWhatsApp(telefono, mensaje), '_blank');
   };
 
   const abrirParaImprimir = () => {
@@ -240,13 +259,11 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
     setTimeout(() => URL.revokeObjectURL(url), 120_000);
   };
 
-  const whatsapp =
-    estado !== 'pendiente' && codigo && datos.representanteTelefono.trim()
-      ? enlaceWhatsApp(datos.representanteTelefono, mensajeParaRepresentante(actual(estado)))
-      : null;
+  // Rechazo o retiro en coordinación: basta un aviso de texto.
+  const avisoTexto = mensaje && telefono && !enviaPdf ? enlaceWhatsApp(telefono, mensaje) : null;
 
   return (
-    <div className="admin-dashboard revision" data-panel={panel ?? ''}>
+    <div className={`admin-dashboard revision${inicial.codigo ? '' : ' desde-cero'}`} data-panel={panel ?? ''}>
       <div className="admin-edit-header">
         <div>
           <Link to="/admin/constancias" className="admin-back-link">← Volver a constancias</Link>
@@ -299,6 +316,21 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
               </label>
             </fieldset>
 
+            {entrega === 'coordinacion' && (
+              <div className="campo-precio">
+                <label htmlFor="precio">Costo al retirarla (opcional)</label>
+                <input
+                  id="precio"
+                  type="text"
+                  placeholder="Ej.: 5 $ o 200 Bs"
+                  maxLength={40}
+                  value={precio}
+                  onChange={(e) => setPrecio(e.target.value)}
+                />
+                <p className="fechas-ayuda">Se indica en el mensaje al representante; no sale en la constancia.</p>
+              </div>
+            )}
+
             <div data-seccion="parrafo">
               <label htmlFor="parrafoAdicional">Párrafo adicional (opcional)</label>
               <textarea
@@ -316,9 +348,14 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
                 </button>
               ) : (
                 <>
-                  {entrega === 'representante' && compartir && (
-                    <button type="button" className="btn btn-primary" onClick={compartirPdf}>
-                      Compartir PDF
+                  {enviaPdf && compartir && (
+                    <button type="button" className="btn btn-primary" onClick={enviarPdf}>
+                      Enviar por WhatsApp
+                    </button>
+                  )}
+                  {enviaPdf && !compartir && telefono && (
+                    <button type="button" className="btn btn-primary" onClick={descargarYAbrirChat}>
+                      Descargar PDF y abrir WhatsApp
                     </button>
                   )}
                   {entrega === 'coordinacion' && (
@@ -326,24 +363,43 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
                       Abrir para imprimir
                     </button>
                   )}
-                  <button
-                    type="button"
-                    className={`btn ${entrega === 'representante' && !compartir ? 'btn-primary' : 'btn-secondary'}`}
-                    onClick={() => descargarArchivo(pdfVigente.blob, pdfVigente.nombre)}
-                  >
-                    Descargar PDF
-                  </button>
+                  {!(enviaPdf && !compartir && telefono) && (
+                    <button
+                      type="button"
+                      className={`btn ${enviaPdf && !compartir ? 'btn-primary' : 'btn-secondary'}`}
+                      onClick={() => descargarArchivo(pdfVigente.blob, pdfVigente.nombre)}
+                    >
+                      Descargar PDF
+                    </button>
+                  )}
                 </>
               )}
-              {whatsapp && (
-                <a className="btn btn-secondary" href={whatsapp} target="_blank" rel="noreferrer">
+              {avisoTexto && (
+                <a className="btn btn-secondary" href={avisoTexto} target="_blank" rel="noreferrer">
                   Avisar al representante
                 </a>
               )}
+              {/* Celular: la vista previa a mano, para revisar antes de aprobar. */}
+              <button type="button" className="btn btn-secondary solo-angosta" onClick={() => alternarPanel('previa')}>
+                {panel === 'previa' ? 'Ocultar la constancia' : 'Ver cómo queda la constancia'}
+              </button>
             </div>
-            {pdfVigente && entrega === 'representante' && !compartir && (
+            {pdfVigente && enviaPdf && compartir && (
               <p className="fechas-ayuda">
-                Descarga el PDF y adjúntalo en el chat del representante (ábrelo con «Avisar al representante»).
+                En WhatsApp elige el chat de {destinatario}
+                {telefono && (
+                  <>
+                    {' '}
+                    (<span style={{ whiteSpace: 'nowrap' }}>{telefono}</span>)
+                  </>
+                )}
+                : el PDF va con el mensaje. El mensaje también queda copiado por si
+                no aparece.
+              </p>
+            )}
+            {pdfVigente && enviaPdf && !compartir && telefono && (
+              <p className="fechas-ayuda">
+                Se descarga el PDF y se abre el chat con el mensaje listo: arrastra el PDF al chat antes de enviar.
               </p>
             )}
             <p className="fechas-ayuda">La constancia sale con la línea para firma y sello a mano.</p>
@@ -403,8 +459,9 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
               )}
             </div>
 
-            <div data-seccion="rechazo">
-              <label htmlFor="motivoRechazo">Motivo de rechazo</label>
+            <div data-seccion="rechazo" className="caja-rechazo">
+              <h4>¿No se puede aprobar?</h4>
+              <label htmlFor="motivoRechazo">Motivo del rechazo (se le dirá al representante)</label>
               <input
                 id="motivoRechazo"
                 type="text"
@@ -414,18 +471,18 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
               />
               <div className="revision-acciones">
                 <button type="button" className="btn btn-danger" onClick={rechazar} disabled={ocupado}>
-                  Rechazar
+                  Rechazar solicitud
                 </button>
               </div>
             </div>
 
-            <div className="revision-acciones" data-seccion="gestion">
+            <div className="revision-acciones caja-gestion" data-seccion="gestion">
               <button type="button" className="btn btn-secondary" onClick={guardar} disabled={ocupado}>
                 Guardar cambios
               </button>
               {!esNueva && (
-                <button type="button" className="btn btn-secondary" onClick={eliminar} disabled={ocupado}>
-                  Eliminar
+                <button type="button" className="btn btn-peligro-suave" onClick={eliminar} disabled={ocupado}>
+                  Eliminar constancia
                 </button>
               )}
             </div>
@@ -438,7 +495,8 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
           </section>
 
           <div data-seccion="datos">
-            <BotonCerrarPanel onCerrar={() => setPanel(null)} />
+            {/* En una constancia desde cero los datos son lo principal: no se ocultan. */}
+            {inicial.codigo && <BotonCerrarPanel onCerrar={() => setPanel(null)} />}
             <CamposSolicitud form={form} modo="coordinacion" />
           </div>
         </form>

@@ -30,7 +30,14 @@ export function ConstanciasPage() {
     retry: 1,
   });
 
+  // Al cambiar de pantalla se vuelve arriba: si no, en el celular se abre a media página.
+  const elegir = (p: Plantilla | null) => {
+    setElegida(p);
+    window.scrollTo(0, 0);
+  };
+
   const volverALista = () => {
+    window.scrollTo(0, 0);
     setElegida(undefined);
     if (codigo) navigate('/constancias');
   };
@@ -68,18 +75,25 @@ export function ConstanciasPage() {
   } else {
     contenido = (
       <div className="plantillas-publicas">
+        <ol className="pasos-solicitud">
+          <li>Elige la constancia.</li>
+          <li>Escribe los datos del estudiante.</li>
+          <li>Envía y avisa a la coordinación por WhatsApp.</li>
+        </ol>
         <h2>¿Cuál constancia necesitas?</h2>
-        <p className="fechas-ayuda">Elige una preparada por la coordinación: solo tendrás que poner tus datos.</p>
+        <p className="fechas-ayuda">Toca la que necesitas. Si no aparece, elige «Otra constancia» al final.</p>
         <div className="plantillas-lista">
           {activas.data.map((p) => (
-            <button key={p.codigo} type="button" className="plantilla-card" onClick={() => setElegida(p)}>
+            <button key={p.codigo} type="button" className="plantilla-card" onClick={() => elegir(p)}>
               <span className="tipo-card-titulo">{tituloPlantilla(p)}</span>
               <span className="tipo-card-desc">{resumenPlantilla(p)}</span>
+              <span className="plantilla-card-accion">Pedir esta constancia →</span>
             </button>
           ))}
-          <button type="button" className="plantilla-card plantilla-card-libre" onClick={() => setElegida(null)}>
+          <button type="button" className="plantilla-card plantilla-card-libre" onClick={() => elegir(null)}>
             <span className="tipo-card-titulo">Otra constancia</span>
-            <span className="tipo-card-desc">Llenar todos los datos (horario, concierto, ensayo…).</span>
+            <span className="tipo-card-desc">Horario, participación, concierto o ensayo: llenas todos los datos.</span>
+            <span className="plantilla-card-accion">Llenar los datos →</span>
           </button>
         </div>
       </div>
@@ -100,8 +114,8 @@ export function ConstanciasPage() {
 function Formulario({ plantilla, onVolver }: { plantilla: Plantilla | null; onVolver: () => void }) {
   return (
     <>
-      <button type="button" className="btn-link volver-plantillas" onClick={onVolver}>
-        ← Elegir otra constancia
+      <button type="button" className="btn btn-secondary volver-plantillas" onClick={onVolver}>
+        ← Volver a la lista de constancias
       </button>
       <SolicitarConstancia key={plantilla?.codigo ?? 'libre'} plantilla={plantilla} />
     </>
