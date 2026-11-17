@@ -80,6 +80,25 @@ interface RevisionProps {
   clave: string;
 }
 
+/** Solo en pantallas angostas: cierra la sección abierta desde «Más opciones». */
+function BotonCerrarPanel({ onCerrar }: { onCerrar: () => void }) {
+  return (
+    <button type="button" className="btn-link cerrar-panel solo-angosta" onClick={onCerrar}>
+      ✕ Cerrar
+    </button>
+  );
+}
+
+/** Secciones que en pantallas angostas se abren desde «Más opciones». */
+type Panel = 'previa' | 'datos' | 'parrafo' | 'rechazo';
+
+const PANELES: { id: Panel; texto: string }[] = [
+  { id: 'previa', texto: 'Ver vista previa' },
+  { id: 'datos', texto: 'Editar datos de la solicitud' },
+  { id: 'parrafo', texto: 'Párrafo adicional' },
+  { id: 'rechazo', texto: 'Rechazar solicitud' },
+];
+
 function RevisionConstancia({ inicial, clave }: RevisionProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -94,8 +113,29 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
   const [pdf, setPdf] = useState<{ blob: Blob; nombre: string; huella: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+  // En pantallas angostas solo se ve lo principal; el resto se abre desde «Más opciones».
+  const [panel, setPanel] = useState<Panel | null>(inicial.codigo ? null : 'datos');
+  const [menu, setMenu] = useState(false);
   const compartir = puedeCompartirArchivos();
   const esNueva = !codigo;
+
+  const alternarPanel = (id: Panel) => {
+    setPanel((actualPanel) => (actualPanel === id ? null : id));
+    setMenu(false);
+    requestAnimationFrame(() =>
+      document.querySelector(`[data-seccion="${id}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    );
+  };
+
+  /** Al aprobar o guardar con datos incompletos, se abre la sección y se lleva al primer error. */
+  const alInvalidar = () => {
+    setPanel('datos');
+    setError('Hay datos por completar o corregir en la solicitud (marcados en rojo).');
+    setTimeout(
+      () => document.querySelector('[data-seccion="datos"] .error')?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+      100
+    );
+  };
 
   const datos = limpiarSolicitud(form.watch());
   // El PDF generado deja de servir si se edita algo que sale impreso.
@@ -141,20 +181,24 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
    * Paso 1: valida, la marca aprobada y genera el PDF. Compartir/abrir van en un
    * segundo toque: el navegador los bloquea si no siguen directo a un clic.
    */
-  const aprobar = form.handleSubmit(() =>
-    conEspera(async () => {
-      const c = await persistir('aprobada');
-      const blob = await generarPdfConstancia({ datos: c, codigo: c.codigo, firmante: FIRMANTE, fechaEmision });
-      setPdf({ blob, nombre: nombreArchivoPdf(c), huella });
-      setAviso('Constancia aprobada. Elige cómo entregarla.');
-    })
+  const aprobar = form.handleSubmit(
+    () =>
+      conEspera(async () => {
+        const c = await persistir('aprobada');
+        const blob = await generarPdfConstancia({ datos: c, codigo: c.codigo, firmante: FIRMANTE, fechaEmision });
+        setPdf({ blob, nombre: nombreArchivoPdf(c), huella });
+        setAviso('Constancia aprobada. Elige cómo entregarla.');
+      }),
+    alInvalidar
   );
 
-  const guardar = form.handleSubmit(() =>
-    conEspera(async () => {
-      await persistir(estado);
-      setAviso('Cambios guardados.');
-    })
+  const guardar = form.handleSubmit(
+    () =>
+      conEspera(async () => {
+        await persistir(estado);
+        setAviso('Cambios guardados.');
+      }),
+    alInvalidar
   );
 
   const rechazar = () => {
@@ -202,7 +246,7 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
       : null;
 
   return (
-    <div className="admin-dashboard">
+    <div className="admin-dashboard revision" data-panel={panel ?? ''}>
       <div className="admin-edit-header">
         <div>
           <Link to="/admin/constancias" className="admin-back-link">← Volver a constancias</Link>
@@ -212,6 +256,12 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
               Solicitada el {fechaLegible(inicial.creadoEn)}
               {` por ${inicial.representanteNombre || inicial.estudianteNombre}`} ·{' '}
               <span className={`estado-badge ${estado}`}>{ESTADOS_CONSTANCIA[estado]}</span>
+            </p>
+          )}
+          {datos.estudianteNombre.trim() && (
+            <p className="revision-resumen">
+              <strong>{datos.estudianteNombre}</strong>
+              {datos.agrupacionNombre.trim() && ` · ${datos.agrupacionNombre}`}
             </p>
           )}
         </div>
@@ -249,13 +299,15 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
               </label>
             </fieldset>
 
-            <label htmlFor="parrafoAdicional">Párrafo adicional (opcional)</label>
-            <textarea
-              id="parrafoAdicional"
-              placeholder="Texto que se agrega antes del cierre. Deja una línea en blanco para separar párrafos."
-              value={parrafoAdicional}
-              onChange={(e) => setParrafoAdicional(e.target.value)}
-            />
+            <div data-seccion="parrafo">
+              <label htmlFor="parrafoAdicional">Párrafo adicional (opcional)</label>
+              <textarea
+                id="parrafoAdicional"
+                placeholder="Texto que se agrega antes del cierre. Deja una línea en blanco para separar párrafos."
+                value={parrafoAdicional}
+                onChange={(e) => setParrafoAdicional(e.target.value)}
+              />
+            </div>
 
             <div className="revision-acciones">
               {!pdfVigente ? (
@@ -296,18 +348,78 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
             )}
             <p className="fechas-ayuda">La constancia sale con la línea para firma y sello a mano.</p>
 
-            <label htmlFor="motivoRechazo">Motivo de rechazo</label>
-            <input
-              id="motivoRechazo"
-              type="text"
-              placeholder="Ej: El estudiante no pertenece a esa agrupación"
-              value={motivoRechazo}
-              onChange={(e) => setMotivoRechazo(e.target.value)}
-            />
-            <div className="revision-acciones">
-              <button type="button" className="btn btn-danger" onClick={rechazar} disabled={ocupado}>
-                Rechazar
+            {/* Celular: lo secundario se abre desde aquí. */}
+            <div className="revision-menu solo-angosta">
+              <button
+                type="button"
+                className="btn btn-secondary revision-menu-boton"
+                aria-expanded={menu}
+                onClick={() => setMenu((v) => !v)}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <path d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                Más opciones
               </button>
+              {menu && (
+                <div className="revision-menu-lista" role="menu">
+                  {PANELES.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      role="menuitem"
+                      className={panel === p.id ? 'activo' : ''}
+                      onClick={() => alternarPanel(p.id)}
+                    >
+                      {panel === p.id ? `Ocultar: ${p.texto.toLowerCase()}` : p.texto}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={ocupado}
+                    onClick={() => {
+                      setMenu(false);
+                      guardar();
+                    }}
+                  >
+                    Guardar cambios
+                  </button>
+                  {!esNueva && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="peligro"
+                      disabled={ocupado}
+                      onClick={() => {
+                        setMenu(false);
+                        eliminar();
+                      }}
+                    >
+                      Eliminar constancia
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div data-seccion="rechazo">
+              <label htmlFor="motivoRechazo">Motivo de rechazo</label>
+              <input
+                id="motivoRechazo"
+                type="text"
+                placeholder="Ej: El estudiante no pertenece a esa agrupación"
+                value={motivoRechazo}
+                onChange={(e) => setMotivoRechazo(e.target.value)}
+              />
+              <div className="revision-acciones">
+                <button type="button" className="btn btn-danger" onClick={rechazar} disabled={ocupado}>
+                  Rechazar
+                </button>
+              </div>
+            </div>
+
+            <div className="revision-acciones" data-seccion="gestion">
               <button type="button" className="btn btn-secondary" onClick={guardar} disabled={ocupado}>
                 Guardar cambios
               </button>
@@ -325,11 +437,17 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
             )}
           </section>
 
-          <CamposSolicitud form={form} modo="coordinacion" />
+          <div data-seccion="datos">
+            <BotonCerrarPanel onCerrar={() => setPanel(null)} />
+            <CamposSolicitud form={form} modo="coordinacion" />
+          </div>
         </form>
 
-        <aside className="revision-vista">
-          <h3>Vista previa</h3>
+        <aside className="revision-vista" data-seccion="previa">
+          <div className="revision-vista-titulo">
+            <h3>Vista previa</h3>
+            <BotonCerrarPanel onCerrar={() => setPanel(null)} />
+          </div>
           <HojaEscalada>
             <ConstanciaDocumento
               datos={{ ...datos, parrafoAdicional }}

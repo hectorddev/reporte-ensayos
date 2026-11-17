@@ -108,7 +108,7 @@ function Bandeja({ clave }: { clave: string }) {
 
       {visibles.length > 0 && (
         <div className="reportes-tabla-wrap">
-          <table className="reportes-tabla">
+          <table className="reportes-tabla tabla-tarjetas">
             <thead>
               <tr>
                 <th>Código</th>
@@ -123,20 +123,20 @@ function Bandeja({ clave }: { clave: string }) {
             <tbody>
               {visibles.map((c) => (
                 <tr key={c.codigo}>
-                  <td className="celda-codigo"><strong>{c.codigo}</strong></td>
-                  <td>{fechaLegible(c.creadoEn)}</td>
-                  <td>
+                  <td className="celda-codigo celda-compacta"><strong>{c.codigo}</strong></td>
+                  <td data-etiqueta="Solicitada">{fechaLegible(c.creadoEn)}</td>
+                  <td data-etiqueta="Tipo">
                     {tituloTipo(c.tipo)}
                     {c.plantilla && nombrePlantilla.has(c.plantilla) && (
                       <span className="celda-plantilla">{nombrePlantilla.get(c.plantilla)}</span>
                     )}
                   </td>
-                  <td>{c.estudianteNombre}</td>
-                  <td>{c.agrupacionNombre}</td>
-                  <td>
+                  <td className="celda-titulo">{c.estudianteNombre}</td>
+                  <td data-etiqueta="Agrupación">{c.agrupacionNombre}</td>
+                  <td className="celda-compacta celda-estado">
                     <span className={`estado-badge ${c.estado}`}>{ESTADOS_CONSTANCIA[c.estado]}</span>
                   </td>
-                  <td>
+                  <td className="celda-acciones">
                     <Link to={`/admin/constancias/${c.codigo}`} className="btn btn-primary btn-sm">
                       {c.estado === 'pendiente' ? 'Revisar' : 'Abrir'}
                     </Link>

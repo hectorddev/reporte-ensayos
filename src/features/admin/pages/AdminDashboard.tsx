@@ -99,7 +99,7 @@ export function AdminDashboard() {
 
       {reportes.length > 0 && (
         <div className="reportes-tabla-wrap">
-          <table className="reportes-tabla">
+          <table className="reportes-tabla tabla-tarjetas">
             <thead>
               <tr>
                 <th>Periodo</th>
@@ -113,12 +113,12 @@ export function AdminDashboard() {
             <tbody>
               {reportes.map((reporte) => (
                 <tr key={reporte.id}>
-                  <td>{MESES[reporte.mes - 1]} {reporte.anio}</td>
-                  <td>{reporte.agrupacion.nombre}</td>
-                  <td>{reporte.ensayos.length}</td>
-                  <td>{totalDesdeReporte(reporte)}</td>
-                  <td>{reporte.repertorioTexto?.split('\n').length ?? 0} temas</td>
-                  <td className="admin-acciones">
+                  <td data-etiqueta="Periodo">{MESES[reporte.mes - 1]} {reporte.anio}</td>
+                  <td className="celda-titulo">{reporte.agrupacion.nombre}</td>
+                  <td data-etiqueta="Ensayos">{reporte.ensayos.length}</td>
+                  <td data-etiqueta="Matrícula">{totalDesdeReporte(reporte)}</td>
+                  <td data-etiqueta="Repertorio">{reporte.repertorioTexto?.split('\n').length ?? 0} temas</td>
+                  <td className="admin-acciones celda-acciones">
                     <Link
                       to={`/admin/reportes/${reporte.id}`}
                       className="btn btn-secondary btn-sm"

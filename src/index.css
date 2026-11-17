@@ -1545,13 +1545,259 @@ a.btn {
   color: #8a94a6;
 }
 
+/* ---------- Panel en pantallas angostas ---------- */
+
+.solo-celular,
+.solo-angosta {
+  display: none !important;
+}
+
+.boton-menu {
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+}
+
+.menu-admin {
+  flex-direction: column;
+  margin: -0.5rem 0 1.25rem;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.menu-admin-item {
+  display: block;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  background: none;
+  color: #1e293b;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu-admin-item:last-child {
+  border-bottom: none;
+  color: #b91c1c;
+}
+
+.menu-admin-item.active {
+  background: #eef2ff;
+  color: #4338ca;
+}
+
+.revision-resumen {
+  margin: 0.35rem 0 0;
+  color: #334155;
+}
+
+.revision-vista-titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.revision-menu {
+  position: relative;
+  margin-top: 0.85rem;
+}
+
+.revision-menu-boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.revision-menu-lista {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.revision-menu-lista button {
+  padding: 0.8rem 1rem;
+  border: none;
+  border-bottom: 1px solid #f1f5f9;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.revision-menu-lista button:last-child {
+  border-bottom: none;
+}
+
+.revision-menu-lista button.activo {
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 600;
+}
+
+.revision-menu-lista button.peligro {
+  color: #b91c1c;
+}
+
+.cerrar-panel {
+  margin-bottom: 0.5rem;
+}
+
 @media (max-width: 960px) {
+  /* minmax(0, …): sin él, la hoja de la vista previa (8.5in) ensancha la columna y todo se sale. */
   .revision-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .revision-vista {
     position: static;
+  }
+
+  /* Revisión: solo lo principal; cada sección secundaria se abre desde «Más opciones». */
+  .revision [data-seccion] {
+    display: none;
+  }
+
+  .revision[data-panel='previa'] [data-seccion='previa'],
+  .revision[data-panel='datos'] [data-seccion='datos'],
+  .revision[data-panel='parrafo'] [data-seccion='parrafo'],
+  .revision[data-panel='rechazo'] [data-seccion='rechazo'] {
+    display: block;
+  }
+
+  .revision-menu.solo-angosta {
+    display: block !important;
+  }
+
+  .cerrar-panel.solo-angosta {
+    display: inline-flex !important;
+  }
+
+  .revision-acciones .btn {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .solo-escritorio {
+    display: none !important;
+  }
+
+  .boton-menu.solo-celular {
+    display: inline-flex !important;
+  }
+
+  .menu-admin.solo-celular {
+    display: flex !important;
+  }
+
+  /* Encabezado del panel: título y botón de menú en una sola línea. */
+  .admin-layout .admin-header {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .admin-header p {
+    display: none;
+  }
+
+  .admin-acciones {
+    white-space: normal;
+  }
+
+  /* Tablas del panel como tarjetas: una por fila. */
+  .tabla-tarjetas thead {
+    display: none;
+  }
+
+  .tabla-tarjetas,
+  .tabla-tarjetas tbody {
+    display: block;
+  }
+
+  .tabla-tarjetas tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.15rem 0.5rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .reportes-tabla.tabla-tarjetas td {
+    flex: 1 1 100%;
+    padding: 0;
+    border: none;
+  }
+
+  .reportes-tabla.tabla-tarjetas td.celda-compacta {
+    flex: 0 1 auto;
+  }
+
+  /* Orden en la tarjeta: título, luego código y estado en la misma línea, luego el resto. */
+  .tabla-tarjetas td.celda-titulo {
+    order: -2;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .tabla-tarjetas td.celda-codigo,
+  .tabla-tarjetas td.celda-estado {
+    order: -1;
+  }
+
+  .tabla-tarjetas td.celda-estado {
+    margin-left: auto;
+  }
+
+  .reportes-lista-header .admin-acciones .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .tabla-tarjetas td[data-etiqueta]::before {
+    content: attr(data-etiqueta) ': ';
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .tabla-tarjetas td.celda-acciones {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+  }
+
+  .tabla-tarjetas td.celda-acciones .btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .tabla-tarjetas .celda-plantilla {
+    display: inline;
+    margin-left: 0.35rem;
   }
 }
 
