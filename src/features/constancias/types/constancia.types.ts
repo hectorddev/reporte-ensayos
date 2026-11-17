@@ -84,20 +84,18 @@ export interface DatosSolicitud {
   notas: string;
 }
 
-/** Quien firma. Se copia en la constancia al aprobarla. */
+/** Quien firma la constancia (va en el texto y bajo la línea de firma). */
 export interface Firmante {
   nombre: string;
   genero: Genero;
   cedula: string;
-  /** Como aparece en el texto: "fungiendo como …". */
+  /** Como aparece en el texto: "actuando como …". */
   cargo: string;
   institucion: string;
-  /** Parte de la institución que va en negrita, ej. FUNDAMUSICAL SIMÓN BOLÍVAR. */
+  /** Parte de la institución que va en negrita, ej. FUNDAMUSICAL SIMÓN BOLIVAR. */
   institucionDestacada: string;
   /** Línea bajo la firma. */
   cargoFirma: string;
-  telefono: string;
-  ciudad: string;
 }
 
 /** Solicitud guardada en el servicio de constancias. */
@@ -210,7 +208,7 @@ export function limpiarSolicitud(d: DatosSolicitud): DatosSolicitud {
     representanteCedula: menor ? d.representanteCedula : '',
     horario: d.tipo === 'horario' ? d.horario : [],
     fechaIngreso: d.tipo === 'pertenencia' ? d.fechaIngreso : '',
-    eventoNombre: d.tipo === 'concierto' || d.tipo === 'jornada' ? d.eventoNombre : '',
+    eventoNombre: evento ? d.eventoNombre : '',
     fecha: evento ? d.fecha : '',
     fechaFin: d.tipo === 'jornada' ? d.fechaFin : '',
     horaInicio: evento ? d.horaInicio : '',

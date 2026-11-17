@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AccesoCoordinacion } from '../components/AccesoCoordinacion';
+import { CampoFecha } from '../../constancias/components/CampoFecha';
 import { CamposSolicitud } from '../../constancias/components/CamposSolicitud';
 import { ConstanciaDocumento, HojaEscalada } from '../../constancias/components/ConstanciaDocumento';
 import { FIRMANTE } from '../../constancias/config';
@@ -225,12 +226,8 @@ function RevisionConstancia({ inicial, clave }: RevisionProps) {
             <h3>Decisión de la coordinación</h3>
 
             <label htmlFor="fechaEmision">Fecha de emisión</label>
-            <input
-              id="fechaEmision"
-              type="date"
-              value={fechaEmision}
-              onChange={(e) => setFechaEmision(e.target.value || hoyIso())}
-            />
+            {/* Mientras se escribe incompleta se mantiene la fecha anterior. */}
+            <CampoFecha id="fechaEmision" value={fechaEmision} onChange={(v) => v && setFechaEmision(v)} />
 
             <fieldset className="opciones-impresion">
               <legend>¿Quién imprime?</legend>

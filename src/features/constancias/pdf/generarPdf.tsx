@@ -1,6 +1,10 @@
-import type { PropsConstanciaPdf } from './ConstanciaPdf';
+import fuenteCursiva from '@fontsource/carlito/files/carlito-latin-400-italic.woff?url';
+import fuenteNegritaCursiva from '@fontsource/carlito/files/carlito-latin-700-italic.woff?url';
+import type { PropsConstanciaPdf, RecursosPdf } from './ConstanciaPdf';
 
 const BASE = import.meta.env.BASE_URL;
+
+const absoluta = (ruta: string) => new URL(ruta, window.location.href).href;
 
 /**
  * Genera el PDF en el navegador. La librería (~1 MB) se carga solo aquí, al
@@ -9,14 +13,17 @@ const BASE = import.meta.env.BASE_URL;
 export async function generarPdfConstancia(
   props: Omit<PropsConstanciaPdf, 'recursos'>
 ): Promise<Blob> {
-  const [{ pdf }, { ConstanciaPdf }] = await Promise.all([
+  const [{ pdf }, { ConstanciaPdf, registrarFuentes }] = await Promise.all([
     import('@react-pdf/renderer'),
     import('./ConstanciaPdf'),
   ]);
-  const recursos = {
-    logo: new URL(`${BASE}img/constancias/logo-alma-llanera.png`, window.location.href).href,
-    franja: new URL(`${BASE}img/constancias/franja-lateral.png`, window.location.href).href,
+  const recursos: RecursosPdf = {
+    logo: absoluta(`${BASE}img/constancias/logo-el-sistema.png`),
+    franja: absoluta(`${BASE}img/constancias/franja-degradado.png`),
+    fuenteCursiva: absoluta(fuenteCursiva),
+    fuenteNegritaCursiva: absoluta(fuenteNegritaCursiva),
   };
+  registrarFuentes(recursos);
   return pdf(<ConstanciaPdf {...props} recursos={recursos} />).toBlob();
 }
 

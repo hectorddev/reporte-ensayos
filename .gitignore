@@ -11,3 +11,4 @@ dist/
 *.tsbuildinfo
 # Ejemplos de constancias en la raíz: contienen datos personales (cédulas de menores)
 /*.pdf
+/*.docx

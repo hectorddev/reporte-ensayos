@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import '@fontsource/carlito/latin-400-italic.css';
+import '@fontsource/carlito/latin-700-italic.css';
+import { NOTA_VALIDEZ, PIE_CONSTANCIA } from '../config';
 import {
   construirContenido,
   esCompacta,
@@ -35,25 +38,26 @@ export function ConstanciaDocumento({ datos, codigo, firmante, fechaEmision }: P
 
   return (
     <article className={`constancia-hoja ${esCompacta(contenido) ? 'compacta' : ''}`}>
-      <img className="constancia-franja" src={`${BASE}img/constancias/franja-lateral.png`} alt="" />
+      <img className="constancia-franja" src={`${BASE}img/constancias/franja-degradado.png`} alt="" />
+      <img
+        className="constancia-logo"
+        src={`${BASE}img/constancias/logo-el-sistema.png`}
+        alt="El Sistema — Música para todos"
+      />
 
       <div className="constancia-cuerpo">
-        <img
-          className="constancia-logo"
-          src={`${BASE}img/constancias/logo-alma-llanera.png`}
-          alt="El Sistema — Programa Alma Llanera"
-        />
+        {contenido.destinatario.length > 0 && (
+          <p className="constancia-destinatario">
+            {contenido.destinatario.map((linea, i) => (
+              <span key={i}>
+                {linea}
+                <br />
+              </span>
+            ))}
+          </p>
+        )}
 
-        <p className="constancia-fecha">{contenido.lugarYFecha}</p>
-
-        <p className="constancia-destinatario">
-          {contenido.destinatario.map((linea, i) => (
-            <span key={i}>
-              {linea}
-              <br />
-            </span>
-          ))}
-        </p>
+        <h4 className="constancia-titulo">{contenido.titulo}</h4>
 
         {contenido.parrafos.map((p, i) => (
           <ParrafoDoc key={i} parrafo={p} />
@@ -92,7 +96,7 @@ export function ConstanciaDocumento({ datos, codigo, firmante, fechaEmision }: P
         <div className="constancia-firma">
           <div className="constancia-firma-linea" />
           <p>
-            {[firmante.nombre, firmante.cargoFirma, firmante.telefono].filter(Boolean).map((linea, i) => (
+            {[firmante.nombre, firmante.cargoFirma].filter(Boolean).map((linea, i) => (
               <span key={i}>
                 {linea}
                 <br />
@@ -102,6 +106,15 @@ export function ConstanciaDocumento({ datos, codigo, firmante, fechaEmision }: P
         </div>
       </div>
 
+      <p className="constancia-validez">{NOTA_VALIDEZ}</p>
+      <footer className="constancia-pie">
+        {PIE_CONSTANCIA.map((linea, i) => (
+          <span key={i}>
+            {linea}
+            <br />
+          </span>
+        ))}
+      </footer>
       <p className="constancia-codigo">Código: {codigo}</p>
     </article>
   );

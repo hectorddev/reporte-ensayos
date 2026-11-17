@@ -1,4 +1,5 @@
 import { Document, Font, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
+import { NOTA_VALIDEZ, PIE_CONSTANCIA } from '../config';
 import {
   construirContenido,
   esCompacta,
@@ -14,6 +15,20 @@ Font.registerHyphenationCallback((palabra) => [palabra]);
 export interface RecursosPdf {
   logo: string;
   franja: string;
+  /** Carlito: mismas medidas que Calibri, la letra del formato del núcleo. */
+  fuenteCursiva: string;
+  fuenteNegritaCursiva: string;
+}
+
+/** Registra la letra del cuerpo; se llama antes de generar el PDF. */
+export function registrarFuentes(r: Pick<RecursosPdf, 'fuenteCursiva' | 'fuenteNegritaCursiva'>): void {
+  Font.register({
+    family: 'Carlito',
+    fonts: [
+      { src: r.fuenteCursiva, fontStyle: 'italic' },
+      { src: r.fuenteNegritaCursiva, fontStyle: 'italic', fontWeight: 'bold' },
+    ],
+  });
 }
 
 export interface PropsConstanciaPdf {
@@ -24,44 +39,66 @@ export interface PropsConstanciaPdf {
   recursos: RecursosPdf;
 }
 
-// Medidas en puntos (72 por pulgada), calcadas de la constancia en papel.
+const AZUL = '#1f3a5f';
+const BORDE = '#9fb3c3';
+
+// Medidas en puntos (72 por pulgada), tomadas del formato en Word del núcleo.
 const s = StyleSheet.create({
   pagina: {
-    paddingTop: 9,
-    paddingRight: 68,
-    paddingBottom: 22,
-    paddingLeft: 83,
-    fontFamily: 'Times-Roman',
+    paddingTop: 90,
+    paddingRight: 84,
+    paddingBottom: 82,
+    paddingLeft: 86,
+    fontFamily: 'Carlito',
+    fontStyle: 'italic',
     fontSize: 12,
-    lineHeight: 1.38,
+    lineHeight: 1.32,
   },
-  franja: { position: 'absolute', top: 0, left: 0, width: 42, height: 792 },
-  logo: { width: 56, alignSelf: 'center', position: 'relative', left: 7, marginBottom: 6 },
-  fecha: { textAlign: 'right', marginBottom: 7 },
-  destinatario: { marginBottom: 22 },
-  parrafo: { textAlign: 'justify', textIndent: 36 },
-  negrita: { fontFamily: 'Times-Bold' },
-  tabla: { marginTop: 16, marginLeft: 61, borderTop: '1 solid #bfbfbf', borderLeft: '1 solid #bfbfbf' },
+  franja: { position: 'absolute', top: 0, left: 0, width: 56, height: 792 },
+  logo: { position: 'absolute', top: 16, left: 235, width: 142, height: 56 },
+  destinatario: { marginBottom: 10 },
+  titulo: {
+    marginBottom: 10,
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textDecoration: 'underline',
+  },
+  parrafo: { marginBottom: 5, textAlign: 'justify', textIndent: 35 },
+  negrita: { fontWeight: 'bold' },
+  tabla: { marginTop: 4, marginBottom: 10, marginLeft: 35, borderTop: `1 solid ${BORDE}`, borderLeft: `1 solid ${BORDE}` },
   fila: { flexDirection: 'row' },
   celda: {
-    paddingVertical: 11,
     paddingHorizontal: 6,
-    borderRight: '1 solid #bfbfbf',
-    borderBottom: '1 solid #bfbfbf',
+    borderRight: `1 solid ${BORDE}`,
+    borderBottom: `1 solid ${BORDE}`,
     textAlign: 'center',
     justifyContent: 'center',
   },
-  celdaDia: { width: '17%' },
+  celdaDia: { width: '20%' },
   celdaHora: { width: '30%' },
-  celdaActividad: { width: '53%' },
-  encabezado: { backgroundColor: '#f2f2f2', fontFamily: 'Times-Bold' },
-  finales: { marginTop: 18 },
-  despedida: { marginTop: 14 },
-  firma: { width: 216, alignSelf: 'center', position: 'relative', left: 25, marginTop: 52 },
+  celdaActividad: { width: '50%' },
+  encabezado: { backgroundColor: '#e6f2f1', fontWeight: 'bold', color: AZUL },
+  despedida: { marginTop: 4, textIndent: 35 },
+  firma: { width: 200, alignSelf: 'center', marginTop: 40 },
   firmaLinea: { borderTop: '1 solid #000' },
   firmaTexto: { marginTop: 3 },
-  firmaLineaTexto: { textAlign: 'center', fontFamily: 'Times-BoldItalic', fontSize: 12, lineHeight: 1.2 },
-  codigo: { position: 'absolute', right: 43, bottom: 22, fontFamily: 'Helvetica', fontSize: 8, color: '#6b7280' },
+  // lineHeight sin unidad se calcula con el fontSize del mismo estilo (18 por defecto): van juntos.
+  firmaLineaTexto: { textAlign: 'center', fontWeight: 'bold', fontSize: 12, lineHeight: 1.2 },
+  // Nota de validez: esquina inferior izquierda, a la altura del código (esquina derecha).
+  validez: { position: 'absolute', left: 70, bottom: 14, fontSize: 7.5, lineHeight: 1.2, color: '#4a5568' },
+  pie: { position: 'absolute', left: 56, right: 0, bottom: 34, textAlign: 'center' },
+  pieLinea: { fontFamily: 'Times-Roman', fontStyle: 'normal', fontSize: 10, lineHeight: 1.25 },
+  codigo: {
+    position: 'absolute',
+    right: 30,
+    bottom: 14,
+    fontFamily: 'Helvetica',
+    fontStyle: 'normal',
+    fontSize: 7,
+    lineHeight: 1.2,
+    color: '#8a94a6',
+  },
 });
 
 function ParrafoPdf({ parrafo }: { parrafo: Parrafo }) {
@@ -80,13 +117,13 @@ function ParrafoPdf({ parrafo }: { parrafo: Parrafo }) {
   );
 }
 
-/** Documento PDF (carta). La firma y el sello van a mano sobre la línea. */
+/** Documento PDF (carta) con el formato del núcleo. La firma y el sello van a mano. */
 export function ConstanciaPdf({ datos, codigo, firmante, fechaEmision, recursos }: PropsConstanciaPdf) {
   const contenido = construirContenido(datos, firmante, fechaEmision);
   // Contenido largo: tabla y espacio de firma más justos para que todo quepa en una hoja.
   const filas = contenido.tabla?.length ?? 0;
   const compacta = esCompacta(contenido);
-  const celda = [s.celda, { paddingVertical: filas > 4 ? 3 : filas > 2 ? 5 : 11 }];
+  const celda = [s.celda, { paddingVertical: filas > 4 ? 2 : filas > 2 ? 3 : 5 }];
 
   return (
     <Document title={`Constancia ${codigo}`} author={firmante.nombre} language="es">
@@ -94,8 +131,10 @@ export function ConstanciaPdf({ datos, codigo, firmante, fechaEmision, recursos 
         <Image src={recursos.franja} style={s.franja} fixed />
         <Image src={recursos.logo} style={s.logo} />
 
-        <Text style={s.fecha}>{contenido.lugarYFecha}</Text>
-        <Text style={s.destinatario}>{contenido.destinatario.join('\n')}</Text>
+        {contenido.destinatario.length > 0 && (
+          <Text style={s.destinatario}>{contenido.destinatario.join('\n')}</Text>
+        )}
+        <Text style={s.titulo}>{contenido.titulo}</Text>
 
         {contenido.parrafos.map((p, i) => (
           <ParrafoPdf key={i} parrafo={p} />
@@ -118,20 +157,18 @@ export function ConstanciaPdf({ datos, codigo, firmante, fechaEmision, recursos 
           </View>
         )}
 
-        <View style={s.finales}>
-          {contenido.parrafosFinales.map((p, i) => (
-            <ParrafoPdf key={i} parrafo={p} />
-          ))}
-        </View>
+        {contenido.parrafosFinales.map((p, i) => (
+          <ParrafoPdf key={i} parrafo={p} />
+        ))}
 
-        {/* Despedida y firma nunca se separan: si no caben, pasan juntas a la otra hoja. */}
+        {/* «Atentamente» y firma nunca se separan: si no caben, pasan juntas a la otra hoja. */}
         <View wrap={false}>
-          <Text style={[s.parrafo, s.despedida, compacta ? { marginTop: 10 } : {}]}>{contenido.despedida}</Text>
-          <View style={[s.firma, compacta ? { marginTop: 36 } : {}]}>
+          <Text style={s.despedida}>{contenido.despedida}</Text>
+          <View style={[s.firma, compacta ? { marginTop: 20 } : {}]}>
             <View style={s.firmaLinea} />
             {/* Una línea por <Text>: con "\n" react-pdf deja un interlineado mucho mayor. */}
             <View style={s.firmaTexto}>
-              {[firmante.nombre, firmante.cargoFirma, firmante.telefono].filter(Boolean).map((linea, i) => (
+              {[firmante.nombre, firmante.cargoFirma].filter(Boolean).map((linea, i) => (
                 <Text key={i} style={s.firmaLineaTexto}>
                   {linea}
                 </Text>
@@ -140,6 +177,16 @@ export function ConstanciaPdf({ datos, codigo, firmante, fechaEmision, recursos 
           </View>
         </View>
 
+        <Text style={s.validez} fixed>
+          {NOTA_VALIDEZ}
+        </Text>
+        <View style={s.pie} fixed>
+          {PIE_CONSTANCIA.map((linea, i) => (
+            <Text key={i} style={s.pieLinea}>
+              {linea}
+            </Text>
+          ))}
+        </View>
         <Text style={s.codigo} fixed>
           Código: {codigo}
         </Text>

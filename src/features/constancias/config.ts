@@ -22,10 +22,26 @@ export const FIRMANTE: Firmante = {
   nombre: 'Leonardo Alipio Becerra Guerrero',
   genero: 'M',
   cedula: '3.794.413',
-  cargo: 'líder del Programa Alma Llanera Táchira',
+  cargo: 'Director del Núcleo Palmira I',
   institucion: 'Sistema Nacional de Orquestas y Coros Juveniles e Infantiles de Venezuela',
-  institucionDestacada: 'FUNDAMUSICAL SIMÓN BOLÍVAR',
-  cargoFirma: 'Líder del programa Alma Llanera',
-  telefono: '0414-7137007',
-  ciudad: 'Palmira',
+  institucionDestacada: 'FUNDAMUSICAL SIMÓN BOLIVAR',
+  cargoFirma: 'Director de Núcleo',
 };
+
+/** Núcleo que emite la constancia: «…en la agrupación “X” del Núcleo Palmira I». */
+export const NUCLEO = 'Núcleo Palmira I';
+
+/** Párrafos fijos del formato del núcleo, antes del cierre. */
+export const PARRAFOS_INSTITUCIONALES = [
+  'La necesidad de encaminar el talento de nuestros alumnos es primordial y toda la colaboración que pueda brindarnos de sus buenos oficios; sería de gran provecho en su desarrollo psicológico y social. Su apoyo nos motiva para continuar con esta hermosa causa en beneficio de los niños, niñas y adolescentes.',
+  'Tenemos la firme intención de llegar a todos los rincones del municipio. El lema de la Fundación es “Tocar, Cantar y Luchar” y a nivel internacional ya somos un gran ejemplo entre las naciones.',
+];
+
+/** Nota pequeña sobre el pie de página. */
+export const NOTA_VALIDEZ = 'Esta constancia solo es válida con el sello húmedo de la institución.';
+
+/** Pie de página: datos públicos del núcleo. */
+export const PIE_CONSTANCIA = [
+  'Calle 1, esquina carrera 6, Municipio Guásimos – Estado Táchira',
+  'Teléfono: 0276-3945614 / Email: nucleo.palmira1@elsistema.org.ve',
+];

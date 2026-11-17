@@ -142,6 +142,51 @@ body {
   padding: 0.75rem 3rem 0.75rem 0.9rem;
 }
 
+/* Fecha DD/MM/AAAA: botón de calendario dentro del campo. El input nativo queda
+   invisible bajo el botón para que el selector del navegador se abra ahí. */
+.campo-fecha {
+  position: relative;
+}
+
+.campo-fecha input[type='text'] {
+  padding-right: 2.75rem;
+}
+
+.campo-fecha-boton {
+  position: absolute;
+  top: 50%;
+  right: 0.3rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.campo-fecha-boton:hover {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.campo-fecha .campo-fecha-nativo {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 2.75rem;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Botón de ojo dentro del campo: muestra u oculta lo escrito. */
 .ver-clave {
   position: absolute;
@@ -1357,124 +1402,147 @@ a.btn {
   overflow: hidden;
   background: #fff;
   color: #000;
-  font-family: 'Times New Roman', Tinos, Times, serif;
+  font-family: Carlito, Calibri, 'Segoe UI', sans-serif;
+  font-style: italic;
   font-size: 12pt;
-  line-height: 1.38;
+  line-height: 1.32;
   box-shadow: 0 4px 18px rgba(15, 23, 42, 0.18);
 }
 
+/* Medidas en pt, iguales a pdf/ConstanciaPdf.tsx: si cambias una, ajusta la otra. */
 .constancia-franja {
   position: absolute;
   top: 0;
   left: 0;
-  width: 0.58in;
+  width: 56pt;
   height: 100%;
 }
 
-.constancia-cuerpo {
-  padding: 0.12in 0.95in 0.31in 1.15in;
+.constancia-logo {
+  position: absolute;
+  top: 16pt;
+  left: 235pt;
+  width: 142pt;
+  height: 56pt;
 }
 
-.constancia-logo {
-  display: block;
-  width: 0.78in;
-  margin: 0 auto 0.08in;
-  transform: translateX(0.1in);
+.constancia-cuerpo {
+  padding: 90pt 84pt 82pt 86pt;
 }
 
 .constancia-cuerpo p {
-  margin: 0;
+  margin: 0 0 5pt;
   text-align: justify;
-  text-indent: 0.5in;
+  text-indent: 35pt;
 }
 
-.constancia-cuerpo .constancia-fecha {
-  margin-bottom: 0.1in;
-  text-align: right;
-  text-indent: 0;
+.constancia-cuerpo strong {
+  font-weight: 700;
 }
 
 .constancia-cuerpo .constancia-destinatario {
-  margin-bottom: 0.3in;
+  margin-bottom: 10pt;
   text-align: left;
   text-indent: 0;
 }
 
+.constancia-titulo {
+  margin: 0 0 10pt;
+  font-size: 16pt;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: underline;
+}
+
 .constancia-tabla {
-  width: calc(100% - 0.85in);
-  margin: 0.22in 0 0 0.85in;
+  width: calc(100% - 35pt);
+  margin: 4pt 0 10pt 35pt;
   border-collapse: collapse;
   text-align: center;
 }
 
 .constancia-tabla th,
 .constancia-tabla td {
-  padding: 0.16in 0.08in;
-  border: 1px solid #bfbfbf;
+  padding: 5pt 6pt;
+  border: 1px solid #9fb3c3;
 }
 
 .constancia-tabla th {
-  background: #f2f2f2;
+  background: #e6f2f1;
+  color: #1f3a5f;
 }
 
 /* Igual que el PDF: con más días, menos alto por fila. */
 .constancia-tabla.compacta th,
 .constancia-tabla.compacta td {
-  padding-top: 0.07in;
-  padding-bottom: 0.07in;
+  padding-top: 3pt;
+  padding-bottom: 3pt;
 }
 
 .constancia-tabla.muy-compacta th,
 .constancia-tabla.muy-compacta td {
-  padding-top: 0.04in;
-  padding-bottom: 0.04in;
-}
-
-.constancia-hoja.compacta .constancia-despedida {
-  margin-top: 0.14in;
-}
-
-.constancia-hoja.compacta .constancia-firma {
-  margin-top: 0.5in;
-}
-
-.constancia-finales {
-  margin-top: 0.25in;
+  padding-top: 2pt;
+  padding-bottom: 2pt;
 }
 
 .constancia-cuerpo .constancia-despedida {
-  margin-top: 0.2in;
+  margin-top: 4pt;
 }
 
 .constancia-firma {
-  width: 3in;
-  margin: 0.72in auto 0;
-  transform: translateX(0.35in);
+  width: 200pt;
+  margin: 40pt auto 0;
   text-align: center;
 }
 
+.constancia-hoja.compacta .constancia-firma {
+  margin-top: 20pt;
+}
 
 .constancia-firma-linea {
   border-top: 1px solid #000;
 }
 
 .constancia-cuerpo .constancia-firma p {
-  margin-top: 0.05in;
+  margin-top: 3pt;
   text-align: center;
   text-indent: 0;
-  font-style: italic;
   font-weight: 700;
   line-height: 1.2;
 }
 
+.constancia-validez {
+  position: absolute;
+  bottom: 14pt;
+  left: 70pt;
+  margin: 0;
+  font-size: 7.5pt;
+  line-height: 1.2;
+  color: #4a5568;
+}
+
+.constancia-pie {
+  position: absolute;
+  right: 0;
+  bottom: 34pt;
+  left: 56pt;
+  font-family: 'Times New Roman', Tinos, Times, serif;
+  font-style: normal;
+  font-size: 10pt;
+  line-height: 1.25;
+  text-align: center;
+}
+
 .constancia-codigo {
   position: absolute;
-  right: 0.6in;
-  bottom: 0.3in;
+  right: 30pt;
+  bottom: 14pt;
   margin: 0;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 8pt;
-  color: #6b7280;
+  font-style: normal;
+  font-size: 7pt;
+  line-height: 1.2;
+  color: #8a94a6;
 }
 
 @media (max-width: 960px) {

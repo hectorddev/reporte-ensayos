@@ -1,5 +1,6 @@
-import { useFieldArray, type UseFormReturn } from 'react-hook-form';
+import { Controller, useFieldArray, type RegisterOptions, type UseFormReturn } from 'react-hook-form';
 import { AGRUPACIONES } from '../../../lib/datosEstaticos';
+import { CampoFecha } from './CampoFecha';
 import { ResumenPlantilla } from './ResumenPlantilla';
 import { esMenorDeEdad, hoyIso } from '../lib/textoConstancia';
 import {
@@ -21,6 +22,30 @@ const minDigitos = (n: number, mensaje: string) => (v: string) =>
 
 function MensajeError({ mensaje }: { mensaje?: string }) {
   return mensaje ? <p className="error">{mensaje}</p> : null;
+}
+
+type CampoDeFecha = 'estudianteFechaNacimiento' | 'fechaIngreso' | 'fecha' | 'fechaFin';
+
+interface PropsFecha {
+  form: Form;
+  name: CampoDeFecha;
+  rules?: RegisterOptions<DatosSolicitud, CampoDeFecha>;
+  min?: string;
+  max?: string;
+}
+
+/** Campo de fecha DD/MM/AAAA conectado al formulario (guarda AAAA-MM-DD). */
+function FechaControlada({ form, name, rules, min, max }: PropsFecha) {
+  return (
+    <Controller
+      control={form.control}
+      name={name}
+      rules={rules}
+      render={({ field }) => (
+        <CampoFecha id={name} value={field.value} onChange={field.onChange} onBlur={field.onBlur} min={min} max={max} />
+      )}
+    />
+  );
 }
 
 interface Props {
@@ -137,7 +162,7 @@ function SeccionEstudiante({ form, modo, agrupacionFija }: { form: Form; modo: M
           <input
             id="estudianteNombre"
             type="text"
-            placeholder="Ej: Esneyder Javier Zambrano Espinoza"
+            placeholder="Ej: María José Pérez Gómez"
             {...register('estudianteNombre', { required: 'Escribe el nombre completo' })}
           />
           <MensajeError mensaje={errors.estudianteNombre?.message} />
@@ -153,11 +178,14 @@ function SeccionEstudiante({ form, modo, agrupacionFija }: { form: Form; modo: M
 
         <div>
           <label htmlFor="estudianteFechaNacimiento">Fecha de nacimiento *</label>
-          <input
-            id="estudianteFechaNacimiento"
-            type="date"
+          <FechaControlada
+            form={form}
+            name="estudianteFechaNacimiento"
             max={hoyIso()}
-            {...register('estudianteFechaNacimiento', { required: 'Indica la fecha de nacimiento' })}
+            rules={{
+              required: 'Indica la fecha de nacimiento',
+              validate: (v) => v <= hoyIso() || 'La fecha de nacimiento no puede ser futura',
+            }}
           />
           <MensajeError mensaje={errors.estudianteFechaNacimiento?.message} />
         </div>
@@ -168,7 +196,7 @@ function SeccionEstudiante({ form, modo, agrupacionFija }: { form: Form; modo: M
             id="estudianteCedula"
             type="text"
             inputMode="numeric"
-            placeholder="V-34.099.176 (vacío si no posee)"
+            placeholder="V-30.123.456 (vacío si no posee)"
             {...register('estudianteCedula')}
           />
         </div>
@@ -275,7 +303,13 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
           <div className="campos-grid">
             <div>
               <label htmlFor="fechaIngreso">¿Desde cuándo pertenece? (opcional)</label>
-              <input id="fechaIngreso" type="date" max={hoyIso()} {...register('fechaIngreso')} />
+              <FechaControlada
+                form={form}
+                name="fechaIngreso"
+                max={hoyIso()}
+                rules={{ validate: (v) => !v || v <= hoyIso() || 'No puede ser una fecha futura' }}
+              />
+              <MensajeError mensaje={errors.fechaIngreso?.message} />
             </div>
           </div>
         </>
@@ -285,37 +319,41 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
         <>
           <h3>{tipo === 'concierto' ? 'Concierto' : tipo === 'jornada' ? 'Jornada de ensayos' : 'Ensayo'}</h3>
           <div className="campos-grid">
-            {tipo !== 'ensayo' && (
-              <div className="campo-ancho">
-                <label htmlFor="eventoNombre">
-                  Nombre {tipo === 'concierto' ? 'del concierto' : 'de la jornada'} (opcional)
-                </label>
-                <input
-                  id="eventoNombre"
-                  type="text"
-                  placeholder={tipo === 'concierto' ? 'Ej: Concierto de Navidad' : 'Ej: Intensivo de vacaciones'}
-                  {...register('eventoNombre')}
-                />
-              </div>
-            )}
+            <div className="campo-ancho">
+              <label htmlFor="eventoNombre">
+                Nombre {tipo === 'concierto' ? 'del concierto' : tipo === 'jornada' ? 'de la jornada' : 'del ensayo'} (opcional)
+              </label>
+              <input
+                id="eventoNombre"
+                type="text"
+                placeholder={
+                  tipo === 'concierto'
+                    ? 'Ej: Concierto de Navidad'
+                    : tipo === 'jornada'
+                      ? 'Ej: Intensivo de vacaciones'
+                      : 'Ej: Ensayo general de vientos metal'
+                }
+                {...register('eventoNombre')}
+              />
+            </div>
 
             <div>
               <label htmlFor="fecha">{tipo === 'jornada' ? 'Desde *' : 'Fecha *'}</label>
-              <input id="fecha" type="date" {...register('fecha', { required: 'Indica la fecha' })} />
+              <FechaControlada form={form} name="fecha" rules={{ required: 'Indica la fecha' }} />
               <MensajeError mensaje={errors.fecha?.message} />
             </div>
 
             {tipo === 'jornada' && (
               <div>
                 <label htmlFor="fechaFin">Hasta *</label>
-                <input
-                  id="fechaFin"
-                  type="date"
+                <FechaControlada
+                  form={form}
+                  name="fechaFin"
                   min={fechaInicio || undefined}
-                  {...register('fechaFin', {
+                  rules={{
                     required: 'Indica la fecha final',
                     validate: (v) => !fechaInicio || v >= fechaInicio || 'Debe ser igual o posterior al inicio',
-                  })}
+                  }}
                 />
                 <MensajeError mensaje={errors.fechaFin?.message} />
               </div>
@@ -358,7 +396,7 @@ function SeccionDestinatario({ form }: { form: Form }) {
           <input
             id="destinatario"
             type="text"
-            placeholder="Ej: Liceo Monseñor Antonio Ignacio Camargo Álvarez"
+            placeholder="Ej: el liceo o colegio donde estudia"
             {...form.register('destinatario')}
           />
           <p className="fechas-ayuda">Si lo dejas vacío dirá «A quien pueda interesar».</p>
