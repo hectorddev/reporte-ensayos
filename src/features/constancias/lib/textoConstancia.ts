@@ -251,7 +251,7 @@ export function construirContenido(
   // 2. Hago constar (nombre y cédula del estudiante en negrita)
   const constar: Parrafo = [
     texto(`Por medio de la presente hago constar que ${sustantivo} `),
-    negrita(c.estudianteNombre.trim().toUpperCase()),
+    negrita(nombrePersona(c.estudianteNombre)),
   ];
   const edadTexto = edad !== null ? `, de ${edad} ${edad === 1 ? 'año' : 'años'} de edad` : '';
   // Sin cédula (niños pequeños) la constancia lo indica con N/A en vez de omitirlo.

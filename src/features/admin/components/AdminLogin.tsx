@@ -12,6 +12,7 @@ interface Props {
 /** Entrada al panel con la clave de coordinación; la valida el servicio, no el sitio. */
 export function AdminLogin({ onLogin, aviso }: Props) {
   const [clave, setClave] = useState('');
+  const [recordar, setRecordar] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -22,7 +23,7 @@ export function AdminLogin({ onLogin, aviso }: Props) {
 
     try {
       await verificarClave(clave);
-      setClaveCoordinacion(clave);
+      setClaveCoordinacion(clave, recordar);
       onLogin();
     } catch (err) {
       if (err instanceof ClaveInvalidaError) setError('Clave incorrecta.');
@@ -41,6 +42,12 @@ export function AdminLogin({ onLogin, aviso }: Props) {
 
         <label htmlFor="clave-coordinacion">Clave de coordinación</label>
         <CampoClave id="clave-coordinacion" value={clave} onChange={setClave} placeholder="Clave de coordinación" />
+
+        <label className="check-linea">
+          <input type="checkbox" checked={recordar} onChange={(e) => setRecordar(e.target.checked)} />
+          Mantener la sesión abierta en este equipo
+        </label>
+        <p className="fechas-ayuda">No lo marques en una computadora que usen otras personas.</p>
 
         {error && <p className="error">{error}</p>}
 

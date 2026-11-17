@@ -1081,7 +1081,7 @@ input[type='radio'] {
 }
 
 .opciones-botones label {
-  flex: 1 1 8rem;
+  flex: 1 1 6.5rem;
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -1181,11 +1181,73 @@ input[type='radio'] {
   margin-bottom: 0.75rem;
 }
 
+/* Fila del horario: se acomoda sola al ancho (celular, PC o panel de revisión). */
 .horario-fila {
-  display: grid;
-  grid-template-columns: 1.1fr 1fr 1fr 1.6fr auto;
-  gap: 0.5rem;
-  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: flex-end;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.horario-fila .horario-celda:first-child {
+  flex: 1 1 8rem;
+}
+
+.horario-fila .horario-celda:nth-child(4) {
+  flex: 1 1 14rem;
+}
+
+/* Hora con am/pm a la vista (no depende del formato del equipo). */
+.campo-hora {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.campo-hora select {
+  width: auto;
+  min-width: 3.5rem;
+  padding-left: 0.55rem;
+  padding-right: 0.4rem;
+}
+
+.campo-hora-separador {
+  font-weight: 700;
+}
+
+.campo-hora-periodo {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+.campo-hora-periodo button {
+  min-width: 2.6rem;
+  padding: 0.6rem 0.6rem;
+  border: 0;
+  background: #fff;
+  color: #475569;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.campo-hora-periodo button + button {
+  border-left: 1px solid #cbd5e1;
+}
+
+.campo-hora-periodo button[aria-pressed='true'] {
+  background: #4f46e5;
+  color: #fff;
+}
+
+.campos-grid > div:has(> .error) .campo-hora-periodo,
+.horario-celda:has(> .error) :is(select, .campo-hora-periodo) {
+  border-color: #dc2626;
 }
 
 .horario-celda {
@@ -1960,21 +2022,10 @@ a.btn {
 }
 
 @media (max-width: 640px) {
-  .horario-fila {
-    grid-template-columns: 1fr 1fr;
-    padding-bottom: 0.6rem;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  /* Día y actividad a todo el ancho; desde/hasta lado a lado. */
+  /* Celular: día y actividad a todo el ancho. */
   .horario-fila .horario-celda:first-child,
   .horario-fila .horario-celda:nth-child(4) {
-    grid-column: 1 / -1;
-  }
-
-  .horario-fila .horario-quitar {
-    grid-column: 1 / -1;
-    justify-self: start;
+    flex-basis: 100%;
   }
 }
 

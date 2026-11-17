@@ -1,6 +1,7 @@
 import { Controller, useFieldArray, type RegisterOptions, type UseFormReturn } from 'react-hook-form';
 import { AGRUPACIONES } from '../../../lib/datosEstaticos';
 import { CampoFecha } from './CampoFecha';
+import { CampoHora } from './CampoHora';
 import { ResumenPlantilla } from './ResumenPlantilla';
 import { esMenorDeEdad, hoyIso, nombrePersona } from '../lib/textoConstancia';
 import {
@@ -47,6 +48,34 @@ function FechaControlada({ form, name, rules, min, max }: PropsFecha) {
     />
   );
 }
+
+type CampoDeHora = 'horaInicio' | 'horaFin' | `horario.${number}.horaInicio` | `horario.${number}.horaFin`;
+
+interface PropsHora {
+  form: Form;
+  name: CampoDeHora;
+  id: string;
+  etiqueta?: string;
+  rules?: RegisterOptions<DatosSolicitud, CampoDeHora>;
+}
+
+/** Hora con am/pm conectada al formulario (guarda HH:MM en 24 horas). */
+function HoraControlada({ form, name, id, etiqueta, rules }: PropsHora) {
+  return (
+    <Controller
+      control={form.control}
+      name={name}
+      rules={rules}
+      render={({ field }) => (
+        <CampoHora id={id} value={field.value} onChange={field.onChange} onBlur={field.onBlur} etiqueta={etiqueta} />
+      )}
+    />
+  );
+}
+
+/** Una hora de fin antes que la de inicio casi siempre es am/pm cambiado. */
+const finDespuesDeInicio = (inicio: string) => (fin: string) =>
+  !fin || !inicio || fin > inicio || 'La hora de fin debe ser después de la de inicio. Revisa am / pm.';
 
 interface Props {
   form: Form;
@@ -267,6 +296,9 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
     name: 'horario',
     rules: { validate: (filas) => tipo !== 'horario' || filas.length > 0 || 'Agrega al menos un día' },
   });
+  const filasIncompletas =
+    Array.isArray(errors.horario) &&
+    errors.horario.some((f) => f && (f.dia || f.horaInicio || f.actividad || f.horaFin?.type === 'required'));
 
   if (tipo === 'pertenencia' && uso === 'plantilla') return null;
 
@@ -291,14 +323,30 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
                     ))}
                   </select>
                 </label>
-                <label className="horario-celda">
+                <div className="horario-celda">
                   <span>Desde</span>
-                  <input type="time" {...register(`horario.${i}.horaInicio`, { required: true })} />
-                </label>
-                <label className="horario-celda">
+                  <HoraControlada
+                    form={form}
+                    name={`horario.${i}.horaInicio`}
+                    id={`horario-${i}-inicio`}
+                    etiqueta={`${fila.dia}, desde`}
+                    rules={{ required: true, deps: [`horario.${i}.horaFin`] }}
+                  />
+                </div>
+                <div className="horario-celda">
                   <span>Hasta</span>
-                  <input type="time" {...register(`horario.${i}.horaFin`, { required: true })} />
-                </label>
+                  <HoraControlada
+                    form={form}
+                    name={`horario.${i}.horaFin`}
+                    id={`horario-${i}-fin`}
+                    etiqueta={`${fila.dia}, hasta`}
+                    rules={{
+                      required: true,
+                      validate: (v) => finDespuesDeInicio(form.getValues(`horario.${i}.horaInicio`))(v),
+                    }}
+                  />
+                  <MensajeError mensaje={errors.horario?.[i]?.horaFin?.message} />
+                </div>
                 <label className="horario-celda">
                   <span>Actividad</span>
                   <input
@@ -318,7 +366,9 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
               </div>
             ))}
           </div>
-          {errors.horario && <MensajeError mensaje="Completa día, horas y actividad de cada fila" />}
+          {/* «Hasta antes que desde» ya se avisa en su fila; aquí, solo lo que falta llenar. */}
+          {errors.horario?.root && <MensajeError mensaje={errors.horario.root.message} />}
+          {filasIncompletas && <MensajeError mensaje="Completa día, horas y actividad de cada fila" />}
           <button
             type="button"
             className="btn btn-secondary"
@@ -393,12 +443,19 @@ export function SeccionDetalle({ form, uso }: PropsDetalle) {
 
             <div>
               <label htmlFor="horaInicio">Hora de inicio (opcional)</label>
-              <input id="horaInicio" type="time" {...register('horaInicio')} />
+              <HoraControlada form={form} name="horaInicio" id="horaInicio" etiqueta="Hora de inicio" rules={{ deps: ['horaFin'] }} />
             </div>
 
             <div>
               <label htmlFor="horaFin">Hora de fin (opcional)</label>
-              <input id="horaFin" type="time" {...register('horaFin')} />
+              <HoraControlada
+                form={form}
+                name="horaFin"
+                id="horaFin"
+                etiqueta="Hora de fin"
+                rules={{ validate: (v) => finDespuesDeInicio(form.getValues('horaInicio'))(v) }}
+              />
+              <MensajeError mensaje={errors.horaFin?.message} />
             </div>
 
             <div className="campo-ancho">
