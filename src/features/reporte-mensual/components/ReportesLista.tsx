@@ -5,15 +5,22 @@ import { ReporteDetalle } from './ReporteDetalle';
 import {
   MESES,
   totalDesdeReporte,
+  type Agrupacion,
   type ReporteMensualGuardado,
 } from '../types/reporteMensual.types';
 
-export function ReportesLista() {
+interface Props {
+  /** Solo estas agrupaciones en el filtro (las del profesor). */
+  agrupaciones?: Agrupacion[];
+}
+
+export function ReportesLista({ agrupaciones: agrupacionesPermitidas }: Props) {
   const [filtroAgrupacion, setFiltroAgrupacion] = useState('');
   const [filtroAnio, setFiltroAnio] = useState('');
   const [reporteSeleccionado, setReporteSeleccionado] = useState<ReporteMensualGuardado | null>(null);
 
-  const { data: agrupaciones = [] } = useAgrupaciones();
+  const { data: todas = [] } = useAgrupaciones();
+  const agrupaciones = agrupacionesPermitidas ?? todas;
   const { data: reportes = [], isLoading, error, refetch } = useReportesMensuales({
     agrupacionId: filtroAgrupacion || undefined,
     anio: filtroAnio ? Number(filtroAnio) : undefined,

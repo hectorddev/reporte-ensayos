@@ -107,6 +107,7 @@ export function AdminDashboard() {
                 <th>Ensayos</th>
                 <th>Matrícula</th>
                 <th>Repertorio</th>
+                <th>Guardado por</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -118,6 +119,7 @@ export function AdminDashboard() {
                   <td data-etiqueta="Ensayos">{reporte.ensayos.length}</td>
                   <td data-etiqueta="Matrícula">{totalDesdeReporte(reporte)}</td>
                   <td data-etiqueta="Repertorio">{reporte.repertorioTexto?.split('\n').length ?? 0} temas</td>
+                  <td data-etiqueta="Guardado por">{reporte.actualizadoPor || '—'}</td>
                   <td className="admin-acciones celda-acciones">
                     <Link
                       to={`/admin/reportes/${reporte.id}`}

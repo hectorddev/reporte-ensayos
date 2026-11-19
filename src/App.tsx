@@ -9,6 +9,7 @@ import { AdminConstanciasPage } from './features/admin/pages/AdminConstanciasPag
 import { AdminConstanciaPage } from './features/admin/pages/AdminConstanciaPage';
 import { AdminPlantillasPage } from './features/admin/pages/AdminPlantillasPage';
 import { AdminPlantillaPage } from './features/admin/pages/AdminPlantillaPage';
+import { AdminProfesoresPage } from './features/admin/pages/AdminProfesoresPage';
 
 /** Enlace corto del aviso por WhatsApp: /r/CT26-XXXXXX → revisión en el panel. */
 function RevisarSolicitud() {
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="reportes/:id" element={<AdminReporteEditPage />} />
+          <Route path="profesores" element={<AdminProfesoresPage />} />
           <Route path="constancias" element={<AdminConstanciasPage />} />
           <Route path="constancias/plantillas" element={<AdminPlantillasPage />} />
           <Route path="constancias/plantillas/nueva" element={<AdminPlantillaPage />} />

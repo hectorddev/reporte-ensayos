@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { AgrupacionSelector } from './AgrupacionSelector';
 import { PeriodoSelector } from './PeriodoSelector';
@@ -8,8 +8,12 @@ import { MatriculaPanel } from './MatriculaPanel';
 import { useAgrupaciones } from '../hooks/useAgrupaciones';
 import {
   MATRICULA_VACIA,
+  MESES,
+  reporteToFormData,
   totalMatricula,
+  type Agrupacion,
   type ReporteMensualFormData,
+  type ReporteMensualGuardado,
 } from '../types/reporteMensual.types';
 
 interface Props {
@@ -22,7 +26,18 @@ interface Props {
   onSubmit: (data: ReporteMensualFormData) => Promise<void>;
   onExitoDismiss?: () => void;
   resetearAlCambiarPeriodo?: boolean;
+  /** Solo estas agrupaciones (las del profesor); si es una, queda elegida. */
+  agrupaciones?: Agrupacion[];
+  /**
+   * Reportes ya guardados: si el mes elegido ya tiene uno se carga para
+   * corregirlo; si no, se copia la matrícula del último reporte anterior.
+   */
+  reportesPrevios?: ReporteMensualGuardado[];
 }
+
+type AvisoPrecarga = { tipo: 'existente' | 'matricula'; de: ReporteMensualGuardado } | null;
+
+const periodo = (r: { anio: number; mes: number }) => r.anio * 12 + r.mes;
 
 const valoresPorDefecto: ReporteMensualFormData = {
   agrupacionId: '',
@@ -44,12 +59,21 @@ export function ReporteFormulario({
   onSubmit,
   onExitoDismiss,
   resetearAlCambiarPeriodo = true,
+  agrupaciones: agrupacionesPermitidas,
+  reportesPrevios,
 }: Props) {
-  const iniciales = valoresIniciales ?? valoresPorDefecto;
+  const unica = agrupacionesPermitidas?.length === 1 ? agrupacionesPermitidas[0].id : '';
+  const iniciales = valoresIniciales ?? { ...valoresPorDefecto, agrupacionId: unica };
   const [anio, setAnio] = useState(iniciales.anio);
   const [mes, setMes] = useState(iniciales.mes);
+  const [aviso, setAviso] = useState<AvisoPrecarga>(null);
+  /** Periodo cuyo reporte guardado está cargado en el formulario. */
+  const cargado = useRef<string | null>(null);
+  /** Periodo al que ya se le copió la matrícula del mes anterior. */
+  const copiada = useRef<string | null>(null);
 
-  const { data: agrupaciones = [], isLoading: loadingAgr } = useAgrupaciones();
+  const { data: todas = [], isLoading: loadingAgr } = useAgrupaciones();
+  const agrupaciones = agrupacionesPermitidas ?? todas;
 
   const {
     control,
@@ -57,6 +81,7 @@ export function ReporteFormulario({
     watch,
     setValue,
     reset,
+    getValues,
     formState: { errors },
   } = useForm<ReporteMensualFormData>({
     defaultValues: iniciales,
@@ -71,6 +96,40 @@ export function ReporteFormulario({
       setMes(valoresIniciales.mes);
     }
   }, [valoresIniciales, reset]);
+
+  // Precarga según agrupación y mes (solo si se pasan los reportes guardados).
+  useEffect(() => {
+    if (!reportesPrevios || !agrupacionId) return;
+    const clave = `${agrupacionId}|${anio}|${mes}`;
+    const deLaAgrupacion = reportesPrevios.filter((r) => r.agrupacionId === agrupacionId);
+    const existente = deLaAgrupacion.find((r) => r.anio === anio && r.mes === mes);
+    if (existente) {
+      if (cargado.current !== clave) {
+        reset(reporteToFormData(existente));
+        cargado.current = clave;
+      }
+      setAviso({ tipo: 'existente', de: existente });
+      return;
+    }
+    if (cargado.current) {
+      // Venía de un reporte ya guardado: el mes nuevo empieza vacío.
+      reset({ ...valoresPorDefecto, agrupacionId, anio, mes });
+      cargado.current = null;
+    }
+    const anterior = deLaAgrupacion
+      .filter((r) => periodo(r) < anio * 12 + mes)
+      .sort((a, b) => periodo(b) - periodo(a))[0];
+    // Solo si la matrícula está vacía (no se pisa lo que ya escribió).
+    if (anterior && (copiada.current === clave || totalMatricula(getValues('matricula')) === 0)) {
+      if (copiada.current !== clave) {
+        setValue('matricula', reporteToFormData(anterior).matricula);
+        copiada.current = clave;
+      }
+      setAviso({ tipo: 'matricula', de: anterior });
+    } else {
+      setAviso(null);
+    }
+  }, [agrupacionId, anio, mes, reportesPrevios, reset, setValue, getValues]);
 
   const cambiarPeriodo = (nuevoAnio: number, nuevoMes: number) => {
     setAnio(nuevoAnio);
@@ -132,6 +191,18 @@ export function ReporteFormulario({
             />
           )}
         />
+        {aviso?.tipo === 'existente' && (
+          <p className="aviso-info">
+            Ya hay un reporte de {MESES[mes - 1]} {anio} para esta agrupación
+            {aviso.de.actualizadoPor ? ` (guardado por ${aviso.de.actualizadoPor})` : ''}. Lo cargamos para que lo
+            revises: al guardar se reemplaza.
+          </p>
+        )}
+        {aviso?.tipo === 'matricula' && (
+          <p className="aviso-info">
+            Copiamos la matrícula de {MESES[aviso.de.mes - 1]} {aviso.de.anio}. Revísala y cámbiala si hubo altas o bajas.
+          </p>
+        )}
       </section>
 
       <section>

@@ -737,3 +737,112 @@
     margin-left: 0;
   }
 }
+
+/* ---------- Profesores ---------- */
+
+.aviso-info {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--acento);
+  border-radius: 6px;
+  background: var(--primario-fondo);
+  color: var(--tinta);
+}
+
+.profesor-sesion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e3e0d8;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.profesor-sesion p {
+  margin: 0;
+  color: var(--tinta) !important;
+}
+
+.profesor-form h3 {
+  margin-top: 0;
+}
+
+.profesor-agrupaciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.4rem 1rem;
+  margin: 1rem 0;
+  padding: 0;
+  border: 0;
+}
+
+.profesor-agrupaciones legend {
+  margin-bottom: 0.5rem;
+  padding: 0;
+  font-weight: 600;
+}
+
+.profesor-agrupaciones .check-linea {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.profesor-agrupaciones .check-linea.activo {
+  border-color: var(--primario);
+  background: var(--primario-suave);
+}
+
+.profesor-guardado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.profesor-guardado p {
+  margin: 0;
+}
+
+.profesores-titulo {
+  margin: 2rem 0 0.75rem;
+}
+
+.profesores-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profesores-lista li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.profesores-lista li > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.profesores-agrupaciones {
+  color: var(--primario);
+  font-weight: 600;
+}

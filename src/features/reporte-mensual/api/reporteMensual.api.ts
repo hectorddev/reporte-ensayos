@@ -9,8 +9,8 @@ import {
 } from '../types/reporteMensual.types';
 
 /**
- * Capa de datos 100% local (localStorage). Mantiene las mismas firmas que la
- * versión con backend para que componentes y hooks no cambien.
+ * Reportes del profesor que tiene la sesión abierta: solo los de sus
+ * agrupaciones (ver lib/nube.ts y lib/profesorAuth.ts).
  */
 
 /** Convierte los datos del formulario en un reporte almacenable. */
@@ -75,7 +75,7 @@ export interface FiltrosReportes {
 export async function fetchReportesMensuales(
   filtros?: FiltrosReportes
 ): Promise<ReporteMensualGuardado[]> {
-  let reportes = await obtenerReportes();
+  let reportes = await obtenerReportes('profesor');
   if (filtros?.agrupacionId) {
     reportes = reportes.filter((r) => r.agrupacionId === filtros.agrupacionId);
   }
@@ -93,6 +93,6 @@ export async function fetchReportesMensuales(
 export async function submitReporteMensual(
   data: ReporteMensualFormData
 ): Promise<ReporteMensualResponse> {
-  const reporte = await guardarReporte(formDataAReporte(data));
+  const reporte = await guardarReporte('profesor', formDataAReporte(data));
   return construirRespuesta(reporte, data, 'Reporte guardado correctamente');
 }

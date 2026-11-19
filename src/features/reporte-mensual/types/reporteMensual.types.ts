@@ -45,6 +45,9 @@ export interface ReporteMensualGuardado {
   createdAt: string;
   agrupacion: Agrupacion;
   ensayos: Ensayo[];
+  /** Nombre del profesor (o «Coordinación») que lo guardó por última vez. */
+  actualizadoPor?: string;
+  actualizadoEn?: string;
 }
 
 export interface ReporteMensualResponse {

@@ -22,8 +22,8 @@ contenido está en [`src/features/inicio/contenido.ts`](src/features/inicio/cont
 | --- | --- |
 | `/` | Inicio |
 | `/constancias`, `/p/:codigo` | Representantes: solicitar constancias |
-| `/profesores` | Profesores: reportes mensuales |
-| `/admin` | Coordinación (con clave) |
+| `/profesores` | Profesores: entran con su cédula y registran los reportes de sus agrupaciones |
+| `/admin` | Coordinación (con clave): reportes, profesores y constancias |
 
 ### Reportes mensuales
 

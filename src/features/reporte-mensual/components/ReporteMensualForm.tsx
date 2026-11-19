@@ -1,12 +1,16 @@
 import { ReporteFormulario } from './ReporteFormulario';
 import { useReporteMensual } from '../hooks/useReporteMensual';
-import type { ReporteMensualFormData } from '../types/reporteMensual.types';
+import type { Agrupacion, ReporteMensualFormData, ReporteMensualGuardado } from '../types/reporteMensual.types';
 
 interface Props {
   onGuardadoExitoso?: () => void;
+  /** Agrupaciones del profesor. */
+  agrupaciones?: Agrupacion[];
+  /** Reportes ya guardados, para precargar el mes. */
+  reportes?: ReporteMensualGuardado[];
 }
 
-export function ReporteMensualForm({ onGuardadoExitoso }: Props) {
+export function ReporteMensualForm({ onGuardadoExitoso, agrupaciones, reportes }: Props) {
   const { submitReporte, isSubmitting, error, data: resultado, reset } =
     useReporteMensual();
 
@@ -28,6 +32,8 @@ export function ReporteMensualForm({ onGuardadoExitoso }: Props) {
       }
       onExitoDismiss={() => reset()}
       onSubmit={onSubmit}
+      agrupaciones={agrupaciones}
+      reportesPrevios={reportes}
     />
   );
 }

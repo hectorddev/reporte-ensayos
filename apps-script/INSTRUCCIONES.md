@@ -1,10 +1,14 @@
-# Conectar la app a Google Sheets
+# Servicio de reportes (Google Sheets)
 
-La app puede guardar los reportes en un Google Sheet en la nube (en vez de solo
-el navegador). Así varias personas llenan reportes y nada se pierde.
+Los reportes de ensayo se guardan en un Google Sheet a través de este Apps
+Script. Quién puede usarlo:
 
-Mientras no completes estos pasos, la app sigue funcionando 100% local. Al pegar
-la URL del Web App, empieza a sincronizar.
+- **Profesores**: entran en `/profesores` con su cédula y solo ven y guardan
+  reportes de las agrupaciones que la coordinación les asignó.
+- **Coordinación**: con la clave de coordinación ve, edita y borra todo, y
+  registra a los profesores en el panel (`/admin/profesores`).
+
+Sin una cédula registrada o la clave, el servicio no muestra ni guarda nada.
 
 ## 1. Crear el Google Sheet
 
@@ -17,6 +21,16 @@ la URL del Web App, empieza a sincronizar.
 2. Borra el contenido de `Código.gs` y pega TODO el contenido de
    [`Codigo.gs`](./Codigo.gs) (este repo).
 3. Guarda (icono de disquete o Ctrl+S).
+
+## 2b. Clave de coordinación (obligatoria)
+
+1. En el editor de Apps Script: ⚙️ **Configuración del proyecto** → **Propiedades
+   del script** → **Agregar propiedad**.
+2. Propiedad: `CLAVE_COORDINACION`. Valor: **la misma clave** que tiene el
+   servicio de constancias (la que se escribe para entrar al panel).
+3. **Guardar propiedades del script**.
+
+Sin esta propiedad el panel de coordinación no puede leer los reportes.
 
 ## 3. Desplegar como Web App
 
@@ -56,9 +70,21 @@ Cada vez que edites `Codigo.gs` debes **Implementar → Gestionar implementacion
 implementación nueva en vez de actualizar, la URL cambia y hay que volver a
 pegarla en `configNube.ts`.
 
+## Profesores
+
+- Se registran desde el panel: **Profesores → Registrar profesor** (nombre,
+  cédula y agrupaciones). Al guardar se puede avisarles por WhatsApp.
+- Quedan en la hoja **Profesores** (Cédula | Nombre | Agrupaciones). Las
+  agrupaciones van con su código (ej. `CORO_INFANTIL, DOPIM`); también se pueden
+  corregir a mano en la hoja.
+- **Quitar acceso** borra al profesor de la lista; sus reportes se conservan.
+- Si dos profesores llevan la misma agrupación, el mes es uno solo: el último en
+  guardar lo actualiza (la columna «Actualizado por» dice quién fue).
+
 ## Nota de seguridad
 
-La URL queda dentro del código del sitio (es estático), así que es visible para
-quien inspeccione. Con acceso "Cualquier usuario", alguien que la encuentre
-podría escribir en el Sheet. Para reportes de ensayos suele ser aceptable. Si
-luego quieres más control, se puede agregar un token o pasar a OAuth.
+La URL del servicio está en el código del sitio, pero ya no basta con conocerla:
+sin clave de coordinación o una cédula registrada no se puede leer ni escribir.
+La cédula no es secreta (sale en documentos), así que quien conozca la de un
+profesor puede entrar como él, pero solo a las agrupaciones de ese profesor. Si
+alguna vez hace falta más, se puede agregar un PIN por profesor.

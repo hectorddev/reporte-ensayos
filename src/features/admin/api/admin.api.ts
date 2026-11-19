@@ -19,12 +19,12 @@ import type {
  */
 
 export async function fetchAdminReportes(): Promise<ReporteMensualGuardado[]> {
-  const reportes = await obtenerReportes();
+  const reportes = await obtenerReportes('coordinacion');
   return reportes.sort((a, b) => b.anio - a.anio || b.mes - a.mes);
 }
 
 export async function fetchAdminReporte(id: string): Promise<ReporteMensualGuardado> {
-  const reportes = await obtenerReportes();
+  const reportes = await obtenerReportes('coordinacion');
   const reporte = reportes.find((r) => r.id === id);
   if (!reporte) throw new Error('Reporte no encontrado');
   return reporte;

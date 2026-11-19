@@ -23,10 +23,13 @@ export function AdminLayout() {
       <header className="admin-header">
         <div>
           <h1>Panel de administración</h1>
-          <p>Gestiona reportes mensuales y constancias</p>
+          <p>Gestiona reportes, profesores y constancias</p>
           <nav className="app-nav solo-escritorio">
             <NavLink to="/admin" end className={claseNav}>
               Reportes
+            </NavLink>
+            <NavLink to="/admin/profesores" className={claseNav}>
+              Profesores
             </NavLink>
             <NavLink to="/admin/constancias" className={claseNav}>
               Constancias
@@ -64,6 +67,9 @@ export function AdminLayout() {
         <nav id="menu-admin" className="menu-admin solo-celular">
           <NavLink to="/admin" end className="menu-admin-item">
             Reportes
+          </NavLink>
+          <NavLink to="/admin/profesores" className="menu-admin-item">
+            Profesores
           </NavLink>
           <NavLink to="/admin/constancias" end className="menu-admin-item">
             Constancias

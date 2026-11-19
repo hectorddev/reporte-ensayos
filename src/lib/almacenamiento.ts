@@ -81,6 +81,13 @@ export function actualizarReporte(
   return actualizado;
 }
 
+/** Cambia en la caché la copia local por la que devolvió el servicio (puede tener otro id). */
+export function reemplazarReporte(idLocal: string, reporte: ReporteMensualGuardado): void {
+  const reportes = leerReportes().filter((r) => r.id !== idLocal && r.id !== reporte.id);
+  reportes.push(reporte);
+  escribirReportes(reportes);
+}
+
 /** Elimina un reporte por id. */
 export function eliminarReporte(id: string): void {
   const reportes = leerReportes().filter((r) => r.id !== id);
