@@ -4,6 +4,8 @@
  * Sin nombres de personas ni fotos de estudiantes: solo cargos y datos generales.
  */
 
+import { MODULOS_PSB } from '../../lib/datosEstaticos';
+
 export const NUCLEO = {
   nombre: 'Núcleo Palmira I',
   lema: 'Semillero de talentos',
@@ -107,15 +109,8 @@ export const HISTORIA = [
 export const PROYECCION =
   'El Ensamble de Cuerdas Pulsadas del núcleo representó a Palmira en Envigado (2010) y Duitama (2011), Colombia, y en el Festival de Plectro de Mirecourt, Francia (2012).';
 
-export const MODULOS_ESCOLARES = [
-  'E.B. Monseñor Tomás Antonio Sanmiguel',
-  'Jardín de Infancia Monseñor San Miguel',
-  'E.N. Mirna Ninoska Ortíz',
-  'E.N. Zoila Guerrero Delgado',
-  'U.E.E. General José Antonio Páez',
-  'C.E.I. Josefa Venancia Camejo',
-  'E.B.N. Francisco Silvestre Espejo',
-];
+/** Escuelas del Programa Simón Bolívar (el mismo catálogo que usan los informes). */
+export const MODULOS_ESCOLARES = MODULOS_PSB.map((m) => m.nombre);
 
 /** Estructura del núcleo en términos generales (sin nombres). */
 export const EQUIPO = [

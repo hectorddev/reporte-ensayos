@@ -31,6 +31,9 @@ export function AdminLayout() {
             <NavLink to="/admin/profesores" className={claseNav}>
               Profesores
             </NavLink>
+            <NavLink to="/admin/psb" className={claseNav}>
+              Simón Bolívar
+            </NavLink>
             <NavLink to="/admin/constancias" className={claseNav}>
               Constancias
             </NavLink>
@@ -70,6 +73,9 @@ export function AdminLayout() {
           </NavLink>
           <NavLink to="/admin/profesores" className="menu-admin-item">
             Profesores
+          </NavLink>
+          <NavLink to="/admin/psb" className="menu-admin-item">
+            Simón Bolívar
           </NavLink>
           <NavLink to="/admin/constancias" end className="menu-admin-item">
             Constancias

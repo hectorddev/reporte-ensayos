@@ -25,8 +25,8 @@ const ACCESOS = [
   },
   {
     para: 'Profesores',
-    titulo: 'Reportes de ensayo',
-    texto: 'Registra cada mes la matrícula, los ensayos y el repertorio de tu agrupación.',
+    titulo: 'Reportes e informes',
+    texto: 'Reporte mensual de ensayos de tu agrupación e informe semanal del Programa Simón Bolívar.',
     a: '/profesores',
     accion: 'Entrar',
   },

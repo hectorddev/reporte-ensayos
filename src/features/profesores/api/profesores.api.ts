@@ -5,11 +5,15 @@ import { normalizarCedula } from '../../../lib/profesorAuth';
 export interface Profesor {
   cedula: string;
   nombre: string;
-  /** Códigos de las agrupaciones asignadas. */
+  /** Códigos de las agrupaciones asignadas (reportes de ensayo). */
   agrupaciones: string[];
+  /** Programas de formación (puede estar en varios). */
+  programas: string[];
+  /** Escuelas del Programa Simón Bolívar. */
+  modulos: string[];
 }
 
-export type PerfilProfesor = Omit<Profesor, 'cedula'>;
+export type PerfilProfesor = Omit<Profesor, 'cedula'> & { telefonosNucleo?: string };
 
 /** Comprueba la cédula y devuelve nombre y agrupaciones. */
 export function entrarProfesor(cedula: string): Promise<PerfilProfesor> {

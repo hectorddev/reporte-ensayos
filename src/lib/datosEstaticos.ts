@@ -23,3 +23,37 @@ export const AGRUPACIONES: Agrupacion[] = [
 export function buscarAgrupacion(id: string): Agrupacion | undefined {
   return AGRUPACIONES.find((a) => a.id === id);
 }
+
+export interface ElementoCatalogo {
+  id: string;
+  nombre: string;
+}
+
+/** Programas de formación del núcleo (un profesor puede estar en varios). */
+export const PROGRAMAS: ElementoCatalogo[] = [
+  { id: 'NUEVOS_INTEGRANTES', nombre: 'Nuevos integrantes' },
+  { id: 'INICIACION_MUSICAL', nombre: 'Iniciación musical' },
+  { id: 'ORQUESTAL', nombre: 'Orquestal' },
+  { id: 'ALMA_LLANERA', nombre: 'Alma Llanera' },
+  { id: 'CORAL', nombre: 'Coral' },
+  { id: 'SIMON_BOLIVAR', nombre: 'Simón Bolívar' },
+];
+
+/** Programa cuyos profesores hacen informes semanales por escuela. */
+export const PROGRAMA_PSB = 'SIMON_BOLIVAR';
+
+/** Módulos escolares del Programa Simón Bolívar (escuelas del municipio). */
+export const MODULOS_PSB: ElementoCatalogo[] = [
+  { id: 'EB_MONSENOR_SANMIGUEL', nombre: 'E.B. Monseñor Tomás Antonio Sanmiguel' },
+  { id: 'JI_MONSENOR_SAN_MIGUEL', nombre: 'Jardín de Infancia Monseñor San Miguel' },
+  { id: 'EN_MIRNA_ORTIZ', nombre: 'E.N. Mirna Ninoska Ortíz' },
+  { id: 'EN_ZOILA_GUERRERO', nombre: 'E.N. Zoila Guerrero Delgado' },
+  { id: 'UEE_JOSE_ANTONIO_PAEZ', nombre: 'U.E.E. General José Antonio Páez' },
+  { id: 'CEI_JOSEFA_CAMEJO', nombre: 'C.E.I. Josefa Venancia Camejo' },
+  { id: 'EBN_FRANCISCO_ESPEJO', nombre: 'E.B.N. Francisco Silvestre Espejo' },
+];
+
+/** Nombre legible de un elemento del catálogo (o el código si no está). */
+export function nombreEnCatalogo(catalogo: ElementoCatalogo[], id: string): string {
+  return catalogo.find((e) => e.id === id)?.nombre ?? id;
+}

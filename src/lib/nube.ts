@@ -1,6 +1,6 @@
 import { URL_NUBE, nubeActiva } from './configNube';
 import { getClaveCoordinacion } from './adminAuth';
-import { actualizarPerfilProfesor, getSesionProfesor } from './profesorAuth';
+import { actualizarPerfilProfesor, getSesionProfesor, type SesionProfesor } from './profesorAuth';
 import {
   actualizarReporte as localActualizar,
   borrarTodo as localBorrarTodo,
@@ -160,7 +160,7 @@ export async function obtenerReportes(rol: Rol): Promise<ReporteMensualGuardado[
     let remotos: ReporteMensualGuardado[];
     if (rol === 'profesor') {
       const r = await llamarServicio<{
-        profesor: { nombre: string; agrupaciones: string[] };
+        profesor: Partial<Omit<SesionProfesor, 'cedula'>>;
         reportes: ReporteMensualGuardado[];
       }>('listarMios', {}, credencialDe(rol));
       actualizarPerfilProfesor(r.profesor);

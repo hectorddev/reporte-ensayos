@@ -7,28 +7,48 @@ import {
   listarProfesores,
   type Profesor,
 } from '../../profesores/api/profesores.api';
-import { AGRUPACIONES, buscarAgrupacion } from '../../../lib/datosEstaticos';
+import {
+  AGRUPACIONES,
+  MODULOS_PSB,
+  PROGRAMAS,
+  PROGRAMA_PSB,
+  nombreEnCatalogo,
+  type ElementoCatalogo,
+} from '../../../lib/datosEstaticos';
 import { normalizarCedula } from '../../../lib/profesorAuth';
 import { enlaceWhatsApp } from '../../constancias/lib/utilidades';
 import { formatoCedula, nombrePersona } from '../../constancias/lib/textoConstancia';
 
-/** /admin/profesores: quién puede registrar reportes y de qué agrupaciones. */
+/** /admin/profesores: quién puede registrar reportes, en qué programas, agrupaciones y escuelas. */
 export function AdminProfesoresPage() {
   return <AccesoCoordinacion>{(clave) => <Profesores clave={clave} />}</AccesoCoordinacion>;
 }
 
-const VACIO: Profesor = { cedula: '', nombre: '', agrupaciones: [] };
+const VACIO: Profesor = { cedula: '', nombre: '', agrupaciones: [], programas: [], modulos: [] };
 
-function nombreAgrupacion(id: string): string {
-  return buscarAgrupacion(id)?.nombre ?? id;
-}
+type Lista = 'agrupaciones' | 'programas' | 'modulos';
+const CATALOGOS: Record<Lista, ElementoCatalogo[]> = {
+  agrupaciones: AGRUPACIONES,
+  programas: PROGRAMAS,
+  modulos: MODULOS_PSB,
+};
+
+const nombres = (lista: Lista, ids: string[]) => ids.map((id) => nombreEnCatalogo(CATALOGOS[lista], id));
+
+/** ¿Tiene programas de la sede (además o en vez de Simón Bolívar)? */
+const tieneSede = (p: Profesor) => p.programas.some((id) => id !== PROGRAMA_PSB);
+const tienePSB = (p: Profesor) => p.programas.includes(PROGRAMA_PSB);
 
 /** Mensaje para avisarle al profesor cómo entrar. */
 function mensajeAcceso(p: Profesor): string {
-  const agrupaciones = p.agrupaciones.map(nombreAgrupacion).join(', ');
+  const que: string[] = [];
+  if (p.agrupaciones.length) que.push(`los reportes de ensayo de ${nombres('agrupaciones', p.agrupaciones).join(', ')}`);
+  if (tienePSB(p) && p.modulos.length) {
+    que.push(`los informes del Programa Simón Bolívar de ${nombres('modulos', p.modulos).join(', ')}`);
+  }
   return [
     `Hola ${p.nombre}.`,
-    `Ya puedes registrar los reportes de ensayo${agrupaciones ? ` de ${agrupaciones}` : ''} en ${window.location.origin}/profesores`,
+    `Ya puedes registrar ${que.join(' y ') || 'tus reportes'} en ${window.location.origin}/profesores`,
     'Entra con tu número de cédula.',
   ].join('\n');
 }
@@ -46,7 +66,7 @@ function Profesores({ clave }: { clave: string }) {
   const profesores = [...(lista.data ?? [])].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 
   const empezar = (p: Profesor | null) => {
-    setForm(p ? { ...p } : VACIO);
+    setForm(p ? { ...VACIO, ...p } : VACIO);
     setEditando(p?.cedula ?? null);
     setError('');
     setGuardado(null);
@@ -54,11 +74,11 @@ function Profesores({ clave }: { clave: string }) {
   };
 
   // Quedan en el orden del catálogo, no en el que se marcaron.
-  const alternar = (id: string) =>
+  const alternar = (lista: Lista, id: string) =>
     setForm((f) => {
-      const marcadas = f.agrupaciones.includes(id) ? f.agrupaciones.filter((a) => a !== id) : [...f.agrupaciones, id];
-      const enCatalogo = AGRUPACIONES.map((a) => a.id).filter((a) => marcadas.includes(a));
-      return { ...f, agrupaciones: [...enCatalogo, ...marcadas.filter((a) => !enCatalogo.includes(a))] };
+      const marcadas = f[lista].includes(id) ? f[lista].filter((a) => a !== id) : [...f[lista], id];
+      const enCatalogo = CATALOGOS[lista].map((a) => a.id).filter((a) => marcadas.includes(a));
+      return { ...f, [lista]: [...enCatalogo, ...marcadas.filter((a) => !enCatalogo.includes(a))] };
     });
 
   const guardar = async (e: React.FormEvent) => {
@@ -67,12 +87,22 @@ function Profesores({ clave }: { clave: string }) {
     const cedula = normalizarCedula(form.cedula);
     if (!nombre) return setError('Escribe el nombre del profesor.');
     if (cedula.length < 5) return setError('Escribe la cédula completa.');
-    if (form.agrupaciones.length === 0) return setError('Marca al menos una agrupación.');
+    if (form.programas.length === 0) return setError('Marca al menos un programa.');
+    if (tieneSede(form) && form.agrupaciones.length === 0) return setError('Marca al menos una agrupación de la sede.');
+    if (tienePSB(form) && form.modulos.length === 0) return setError('Marca al menos una escuela del Programa Simón Bolívar.');
 
+    // Lo que no corresponde a sus programas no se guarda.
+    const profesor: Profesor = {
+      ...form,
+      nombre,
+      cedula,
+      agrupaciones: tieneSede(form) ? form.agrupaciones : [],
+      modulos: tienePSB(form) ? form.modulos : [],
+    };
     setError('');
     setGuardando(true);
     try {
-      const p = await guardarProfesor(clave, { ...form, nombre, cedula }, editando ?? undefined);
+      const p = await guardarProfesor(clave, profesor, editando ?? undefined);
       await queryClient.invalidateQueries({ queryKey: ['admin-profesores'] });
       setGuardado(p);
       setForm(VACIO);
@@ -85,7 +115,7 @@ function Profesores({ clave }: { clave: string }) {
   };
 
   const eliminar = async (p: Profesor) => {
-    if (!window.confirm(`¿Quitar el acceso de ${p.nombre}? Sus reportes ya guardados no se borran.`)) return;
+    if (!window.confirm(`¿Quitar el acceso de ${p.nombre}? Sus reportes e informes ya guardados no se borran.`)) return;
     try {
       await eliminarProfesor(clave, p.cedula);
       if (editando === p.cedula) empezar(null);
@@ -95,14 +125,27 @@ function Profesores({ clave }: { clave: string }) {
     }
   };
 
+  const casillas = (lista: Lista, leyenda: string, ayuda?: string) => (
+    <fieldset className="profesor-agrupaciones" data-lista={lista}>
+      <legend>{leyenda}</legend>
+      {ayuda && <p className="fechas-ayuda profesor-ayuda">{ayuda}</p>}
+      {CATALOGOS[lista].map((a) => (
+        <label key={a.id} className={`check-linea${form[lista].includes(a.id) ? ' activo' : ''}`}>
+          <input type="checkbox" checked={form[lista].includes(a.id)} onChange={() => alternar(lista, a.id)} />
+          {a.nombre}
+        </label>
+      ))}
+    </fieldset>
+  );
+
   return (
     <div className="admin-dashboard">
       <div className="admin-edit-header">
         <div>
           <h2>Profesores</h2>
           <p className="fechas-ayuda">
-            Cada profesor entra en {window.location.host}/profesores con su número de cédula y solo ve y registra los
-            reportes de las agrupaciones que le asignes aquí.
+            Cada profesor entra en {window.location.host}/profesores con su número de cédula. Ve los reportes de ensayo de
+            las agrupaciones que le asignes y, si está en el Programa Simón Bolívar, los informes de sus escuelas.
           </p>
         </div>
       </div>
@@ -146,15 +189,10 @@ function Profesores({ clave }: { clave: string }) {
             </div>
           </div>
 
-          <fieldset className="profesor-agrupaciones">
-            <legend>Agrupaciones que lleva</legend>
-            {AGRUPACIONES.map((a) => (
-              <label key={a.id} className={`check-linea${form.agrupaciones.includes(a.id) ? ' activo' : ''}`}>
-                <input type="checkbox" checked={form.agrupaciones.includes(a.id)} onChange={() => alternar(a.id)} />
-                {a.nombre}
-              </label>
-            ))}
-          </fieldset>
+          {casillas('programas', 'Programas en los que está', 'Puede estar en varios.')}
+          {tieneSede(form) && casillas('agrupaciones', 'Agrupaciones de la sede que lleva', 'Para los reportes de ensayo.')}
+          {tienePSB(form) &&
+            casillas('modulos', 'Escuelas del Programa Simón Bolívar', 'Solo podrá hacer informes de estas escuelas.')}
 
           {error && <p className="error">{error}</p>}
 
@@ -186,9 +224,15 @@ function Profesores({ clave }: { clave: string }) {
             <div>
               <strong>{p.nombre}</strong>
               <span className="fechas-ayuda">C.I. {formatoCedula(p.cedula).replace('N° ', '')}</span>
-              <span className="profesores-agrupaciones">
-                {p.agrupaciones.length ? p.agrupaciones.map(nombreAgrupacion).join(' · ') : 'Sin agrupaciones'}
+              <span className="profesores-programas">
+                {p.programas.length ? nombres('programas', p.programas).join(' · ') : 'Sin programa asignado'}
               </span>
+              {p.agrupaciones.length > 0 && (
+                <span className="profesores-agrupaciones">{nombres('agrupaciones', p.agrupaciones).join(' · ')}</span>
+              )}
+              {p.modulos.length > 0 && (
+                <span className="profesores-agrupaciones">Escuelas: {nombres('modulos', p.modulos).join(' · ')}</span>
+              )}
             </div>
             <div className="admin-acciones">
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => empezar(p)}>

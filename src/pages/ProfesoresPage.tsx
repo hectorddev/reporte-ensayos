@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CabeceraSitio } from '../components/CabeceraSitio';
 import { ReporteMensualForm } from '../features/reporte-mensual/components/ReporteMensualForm';
 import { ReportesLista } from '../features/reporte-mensual/components/ReportesLista';
 import { useReportesMensuales } from '../features/reporte-mensual/hooks/useReportesMensuales';
 import { entrarProfesor } from '../features/profesores/api/profesores.api';
-import { AGRUPACIONES } from '../lib/datosEstaticos';
+import { AGRUPACIONES, MODULOS_PSB, PROGRAMA_PSB, nombreEnCatalogo } from '../lib/datosEstaticos';
+import { InformePSBForm } from '../features/psb/components/InformePSBForm';
+import { ListaInformesPSB } from '../features/psb/components/ListaInformesPSB';
+import { descargarInformePSB, listarMisInformesPSB } from '../features/psb/api/psb.api';
 import { ErrorServicio } from '../lib/nube';
 import {
   actualizarPerfilProfesor,
@@ -18,6 +21,7 @@ import {
 import type { Agrupacion } from '../features/reporte-mensual/types/reporteMensual.types';
 
 type Vista = 'nuevo' | 'lista';
+type Area = 'ensayo' | 'psb';
 
 /** Agrupaciones del profesor en el orden del catálogo (las desconocidas, con su código). */
 function agrupacionesDe(sesion: SesionProfesor): Agrupacion[] {
@@ -121,8 +125,11 @@ function EntradaProfesor({ aviso, onEntrar }: { aviso: string; onEntrar: (s: Ses
     <div className="admin-login">
       <form onSubmit={entrar} className="admin-login-card" noValidate>
         <p className="pagina-etiqueta">Profesores</p>
-        <h2>Reportes de ensayo</h2>
-        <p className="fechas-ayuda">Entra con tu número de cédula para registrar los reportes de tus agrupaciones.</p>
+        <h2>Acceso de profesores</h2>
+        <p className="fechas-ayuda">
+          Entra con tu número de cédula para registrar los reportes de ensayo de tus agrupaciones o los informes del
+          Programa Simón Bolívar.
+        </p>
         {aviso && <p className="error">{aviso}</p>}
 
         <label htmlFor="cedula-profesor">Número de cédula</label>
@@ -148,7 +155,7 @@ function EntradaProfesor({ aviso, onEntrar }: { aviso: string; onEntrar: (s: Ses
           {cargando ? 'Entrando…' : 'Entrar'}
         </button>
         <p className="fechas-ayuda">
-          ¿Todavía no puedes entrar? La coordinación te registra con tu cédula y las agrupaciones que llevas.
+          ¿Todavía no puedes entrar? La coordinación te registra con tu cédula, tus programas y lo que llevas.
         </p>
       </form>
     </div>
@@ -156,9 +163,78 @@ function EntradaProfesor({ aviso, onEntrar }: { aviso: string; onEntrar: (s: Ses
 }
 
 function PanelProfesor({ sesion, onSalir }: { sesion: SesionProfesor; onSalir: () => void }) {
+  const agrupaciones = agrupacionesDe(sesion);
+  const tieneEnsayo = agrupaciones.length > 0;
+  const tienePSB = sesion.programas.includes(PROGRAMA_PSB) && sesion.modulos.length > 0;
+  const [area, setArea] = useState<Area>(tieneEnsayo ? 'ensayo' : 'psb');
+  const areaVisible: Area = area === 'psb' && tienePSB ? 'psb' : tieneEnsayo ? 'ensayo' : 'psb';
+
+  let titulo = 'Reportes de ensayo';
+  if (tieneEnsayo && tienePSB) titulo = 'Mis reportes';
+  else if (tienePSB) titulo = 'Informes Simón Bolívar';
+
+  return (
+    <>
+      <header className="app-header">
+        <p className="pagina-etiqueta">Profesores</p>
+        <h1>{titulo}</h1>
+        <div className="profesor-sesion">
+          <div>
+            <p>
+              Hola, <strong>{sesion.nombre || 'profesor'}</strong>.
+            </p>
+            {tieneEnsayo && (
+              <p className="fechas-ayuda">
+                {agrupaciones.length === 1 ? 'Agrupación: ' : 'Agrupaciones: '}
+                {agrupaciones.map((a) => a.nombre).join(' · ')}
+              </p>
+            )}
+            {tienePSB && (
+              <p className="fechas-ayuda">
+                {sesion.modulos.length === 1 ? 'Escuela (Simón Bolívar): ' : 'Escuelas (Simón Bolívar): '}
+                {sesion.modulos.map((id) => nombreEnCatalogo(MODULOS_PSB, id)).join(' · ')}
+              </p>
+            )}
+          </div>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={onSalir}>
+            Cerrar sesión
+          </button>
+        </div>
+
+        {tieneEnsayo && tienePSB && (
+          <fieldset className="opciones-botones area-profesor">
+            <legend>¿Qué vas a hacer?</legend>
+            {(
+              [
+                ['ensayo', 'Reportes de ensayo'],
+                ['psb', 'Informes Simón Bolívar'],
+              ] as const
+            ).map(([valor, texto]) => (
+              <label key={valor} className={areaVisible === valor ? 'activo' : ''}>
+                <input type="radio" name="area" checked={areaVisible === valor} onChange={() => setArea(valor)} />
+                {texto}
+              </label>
+            ))}
+          </fieldset>
+        )}
+      </header>
+
+      {!tieneEnsayo && !tienePSB ? (
+        <p className="aviso-info">
+          La coordinación todavía no te asignó agrupaciones ni escuelas. Pídeles que lo hagan y vuelve a entrar.
+        </p>
+      ) : areaVisible === 'ensayo' ? (
+        <AreaEnsayo agrupaciones={agrupaciones} />
+      ) : (
+        <AreaPSB sesion={sesion} />
+      )}
+    </>
+  );
+}
+
+function AreaEnsayo({ agrupaciones }: { agrupaciones: Agrupacion[] }) {
   const [vista, setVista] = useState<Vista>('nuevo');
   const queryClient = useQueryClient();
-  const agrupaciones = agrupacionesDe(sesion);
   const { data: reportes } = useReportesMensuales();
 
   const irALista = () => {
@@ -168,55 +244,69 @@ function PanelProfesor({ sesion, onSalir }: { sesion: SesionProfesor; onSalir: (
 
   return (
     <>
-      <header className="app-header">
-        <p className="pagina-etiqueta">Profesores</p>
-        <h1>Reportes de ensayo</h1>
-        <div className="profesor-sesion">
-          <p>
-            Hola, <strong>{sesion.nombre || 'profesor'}</strong>.
-            {agrupaciones.length > 0 && (
-              <>
-                {' '}
-                {agrupaciones.length === 1 ? 'Tu agrupación: ' : 'Tus agrupaciones: '}
-                {agrupaciones.map((a) => a.nombre).join(' · ')}
-              </>
-            )}
-          </p>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={onSalir}>
-            Cerrar sesión
-          </button>
-        </div>
-
-        {agrupaciones.length > 0 && (
-          <nav className="app-nav" aria-label="Reportes">
-            <button
-              type="button"
-              className={`nav-btn ${vista === 'nuevo' ? 'activo' : ''}`}
-              aria-pressed={vista === 'nuevo'}
-              onClick={() => setVista('nuevo')}
-            >
-              Nuevo reporte
-            </button>
-            <button
-              type="button"
-              className={`nav-btn ${vista === 'lista' ? 'activo' : ''}`}
-              aria-pressed={vista === 'lista'}
-              onClick={irALista}
-            >
-              Mis reportes
-            </button>
-          </nav>
-        )}
-      </header>
-
-      {agrupaciones.length === 0 ? (
-        <p className="aviso-info">
-          La coordinación todavía no te asignó agrupaciones. Pídeles que lo hagan y vuelve a entrar.
-        </p>
-      ) : vista === 'nuevo' ? (
+      <nav className="app-nav" aria-label="Reportes de ensayo">
+        <button
+          type="button"
+          className={`nav-btn ${vista === 'nuevo' ? 'activo' : ''}`}
+          aria-pressed={vista === 'nuevo'}
+          onClick={() => setVista('nuevo')}
+        >
+          Nuevo reporte
+        </button>
+        <button
+          type="button"
+          className={`nav-btn ${vista === 'lista' ? 'activo' : ''}`}
+          aria-pressed={vista === 'lista'}
+          onClick={irALista}
+        >
+          Mis reportes
+        </button>
+      </nav>
+      {vista === 'nuevo' ? (
         <ReporteMensualForm agrupaciones={agrupaciones} reportes={reportes} onGuardadoExitoso={irALista} />
       ) : (
         <ReportesLista agrupaciones={agrupaciones} />
+      )}
+    </>
+  );
+}
+
+function AreaPSB({ sesion }: { sesion: SesionProfesor }) {
+  const [vista, setVista] = useState<Vista>('nuevo');
+  const informes = useQuery({ queryKey: ['psb-mis-informes', sesion.cedula], queryFn: listarMisInformesPSB });
+
+  return (
+    <>
+      <nav className="app-nav" aria-label="Informes Simón Bolívar">
+        <button
+          type="button"
+          className={`nav-btn ${vista === 'nuevo' ? 'activo' : ''}`}
+          aria-pressed={vista === 'nuevo'}
+          onClick={() => setVista('nuevo')}
+        >
+          Nuevo informe
+        </button>
+        <button
+          type="button"
+          className={`nav-btn ${vista === 'lista' ? 'activo' : ''}`}
+          aria-pressed={vista === 'lista'}
+          onClick={() => {
+            void informes.refetch();
+            setVista('lista');
+          }}
+        >
+          Mis informes
+        </button>
+      </nav>
+      {vista === 'nuevo' ? (
+        <InformePSBForm sesion={sesion} enviados={informes.data} onEnviado={() => void informes.refetch()} />
+      ) : (
+        <ListaInformesPSB
+          informes={informes.data ?? []}
+          cargando={informes.isLoading}
+          error={informes.error}
+          descargarWord={descargarInformePSB}
+        />
       )}
     </>
   );

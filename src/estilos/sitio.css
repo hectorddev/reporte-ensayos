@@ -846,3 +846,95 @@
   color: var(--primario);
   font-weight: 600;
 }
+
+/* ---------- Informes del Programa Simón Bolívar ---------- */
+
+.profesores-programas {
+  color: var(--tinta);
+  font-weight: 600;
+}
+
+.profesor-ayuda {
+  grid-column: 1 / -1;
+  margin: -0.25rem 0 0.25rem;
+}
+
+.area-profesor {
+  max-width: 34rem;
+  margin-top: 1rem;
+}
+
+.informe-psb h2 {
+  margin: 0 0 0.25rem;
+}
+
+.informe-psb .alert-error ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.dias-semana {
+  margin-bottom: 1rem;
+}
+
+.dias-semana label {
+  flex: 1 1 8rem;
+}
+
+.dia-clase {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1.5px solid var(--primario-borde);
+  border-radius: 10px;
+  background: var(--primario-fondo);
+}
+
+.dia-clase h4 {
+  margin: 0 0 0.6rem;
+  font-size: 1.1rem;
+}
+
+.dia-clase textarea {
+  min-height: 5.5rem;
+}
+
+.dia-fotos-titulo {
+  margin: 0.9rem 0 0.4rem;
+  font-weight: 600;
+}
+
+.fotos-dia {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.6rem;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.fotos-dia li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.fotos-dia img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.boton-fotos {
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.informe-listo h2 {
+  margin-top: 0;
+}
+
+.informes-psb li > div:first-child span:nth-child(2) {
+  font-weight: 600;
+}

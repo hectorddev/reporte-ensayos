@@ -7,6 +7,8 @@ Script. Quién puede usarlo:
   reportes de las agrupaciones que la coordinación les asignó.
 - **Coordinación**: con la clave de coordinación ve, edita y borra todo, y
   registra a los profesores en el panel (`/admin/profesores`).
+- **Programa Simón Bolívar**: los profesores de ese programa envían el informe
+  semanal de sus escuelas; el Word y las fotos quedan en tu Drive.
 
 Sin una cédula registrada o la clave, el servicio no muestra ni guarda nada.
 
@@ -31,6 +33,23 @@ Sin una cédula registrada o la clave, el servicio no muestra ni guarda nada.
 3. **Guardar propiedades del script**.
 
 Sin esta propiedad el panel de coordinación no puede leer los reportes.
+
+Propiedades opcionales (mismo lugar):
+
+- `TELEFONOS_NUCLEO`: lo que el informe PSB pone en «Teléfonos de contacto
+  (núcleo)», por ejemplo `0276-3945614 / 0414-0000000`. Si no está, va solo el
+  0276-3945614. Está aquí y no en el sitio para no publicar números personales.
+- `CARPETA_PSB_ID`: id de una carpeta de Drive donde guardar los informes PSB
+  (lo que va después de `/folders/` en su enlace). Si no está, se crea
+  «Informes PSB» en la raíz de tu Drive.
+
+## 2c. Permiso de Drive (para los informes PSB)
+
+1. En el editor, arriba, elige la función **autorizarDrive** y pulsa **▶ Ejecutar**.
+2. Acepta los permisos (Drive). En el registro aparece el enlace de la carpeta
+   «Informes PSB».
+
+Hazlo cada vez que una versión nueva del script pida permisos nuevos.
 
 ## 3. Desplegar como Web App
 
@@ -80,6 +99,22 @@ pegarla en `configNube.ts`.
 - **Quitar acceso** borra al profesor de la lista; sus reportes se conservan.
 - Si dos profesores llevan la misma agrupación, el mes es uno solo: el último en
   guardar lo actualiza (la columna «Actualizado por» dice quién fue).
+
+## Informes del Programa Simón Bolívar
+
+- Al registrar a un profesor marca sus **programas** (pueden ser varios). Si
+  está en Simón Bolívar, marca también sus **escuelas**: solo podrá hacer
+  informes de esas.
+- El profesor elige escuela y semana, marca los días de clase, escribe qué se
+  trabajó y agrega hasta 4 fotos por día. El sitio arma el Word con el formato
+  del núcleo y lo sube con las fotos a
+  **Informes PSB / Escuela / Semana del …** en tu Drive.
+- La hoja **InformesPSB** lista cada informe con el enlace a su carpeta y a su
+  documento. En el panel: **Simón Bolívar**.
+- Si se envía de nuevo el informe de la misma escuela y semana, reemplaza al
+  anterior y sus archivos van a la papelera de Drive.
+- Las fotos pueden tener niños: la carpeta es privada de tu cuenta; no la
+  compartas con enlace público.
 
 ## Nota de seguridad
 

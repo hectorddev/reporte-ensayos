@@ -6,9 +6,17 @@
 export interface SesionProfesor {
   cedula: string;
   nombre: string;
-  /** Códigos de las agrupaciones asignadas. */
+  /** Códigos de las agrupaciones asignadas (reportes de ensayo). */
   agrupaciones: string[];
+  /** Programas de formación en los que está (ver PROGRAMAS). */
+  programas: string[];
+  /** Escuelas del Programa Simón Bolívar asignadas (ver MODULOS_PSB). */
+  modulos: string[];
+  /** Teléfonos del núcleo para los informes (los configura la coordinación). */
+  telefonosNucleo?: string;
 }
+
+const textos = (v: unknown): string[] => (Array.isArray(v) ? v.filter((a): a is string => typeof a === 'string') : []);
 
 const CLAVE = 'sesion_profesor';
 
@@ -21,7 +29,10 @@ function leer(almacen: () => Storage): SesionProfesor | null {
     return {
       cedula: s.cedula,
       nombre: typeof s.nombre === 'string' ? s.nombre : '',
-      agrupaciones: Array.isArray(s.agrupaciones) ? s.agrupaciones.filter((a) => typeof a === 'string') : [],
+      agrupaciones: textos(s.agrupaciones),
+      programas: textos(s.programas),
+      modulos: textos(s.modulos),
+      telefonosNucleo: typeof s.telefonosNucleo === 'string' ? s.telefonosNucleo : undefined,
     };
   } catch {
     return null;
@@ -58,7 +69,7 @@ export function setSesionProfesor(sesion: SesionProfesor, recordar: boolean) {
 }
 
 /** Nombre y agrupaciones al día (la coordinación pudo cambiarlos). */
-export function actualizarPerfilProfesor(perfil: Pick<SesionProfesor, 'nombre' | 'agrupaciones'>) {
+export function actualizarPerfilProfesor(perfil: Partial<Omit<SesionProfesor, 'cedula'>>) {
   const actual = getSesionProfesor();
   const almacen = almacenDeSesion();
   if (!actual || !almacen) return;
