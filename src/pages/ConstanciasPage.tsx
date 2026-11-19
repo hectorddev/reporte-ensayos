@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { CabeceraSitio } from '../components/CabeceraSitio';
 import { SolicitarConstancia } from '../features/constancias/components/SolicitarConstancia';
 import { leerPlantilla, listarPlantillasActivas } from '../features/constancias/api/constancias.api';
 import { resumenPlantilla, tituloPlantilla } from '../features/constancias/lib/plantillas';
@@ -101,13 +102,17 @@ export function ConstanciasPage() {
   }
 
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>Solicitar constancia</h1>
-        <p>Horario, participación en agrupación, conciertos y ensayos</p>
-      </header>
-      {contenido}
-    </div>
+    <>
+      <CabeceraSitio />
+      <div className="app">
+        <header className="app-header">
+          <p className="pagina-etiqueta">Representantes</p>
+          <h1>Solicitar constancia</h1>
+          <p>Horario, participación en agrupación, conciertos y ensayos</p>
+        </header>
+        {contenido}
+      </div>
+    </>
   );
 }
 

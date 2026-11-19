@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Routes, Route, useParams } from 'react-router-dom';
-import { HomePage } from './pages/HomePage';
+import { InicioPage } from './pages/InicioPage';
+import { ProfesoresPage } from './pages/ProfesoresPage';
 import { ConstanciasPage } from './pages/ConstanciasPage';
 import { AdminLayout } from './features/admin/components/AdminLayout';
 import { AdminDashboard } from './features/admin/pages/AdminDashboard';
@@ -19,7 +20,10 @@ export default function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<InicioPage />} />
+        <Route path="/profesores" element={<ProfesoresPage />} />
+        {/* Antes el formulario de reportes estaba en la raíz. */}
+        <Route path="/reportes" element={<Navigate to="/profesores" replace />} />
         <Route path="/constancias" element={<ConstanciasPage />} />
         <Route path="/p/:codigo" element={<ConstanciasPage />} />
         <Route path="/r/:codigo" element={<RevisarSolicitud />} />

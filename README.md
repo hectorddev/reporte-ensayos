@@ -11,6 +11,20 @@ firmar.
 
 ## Qué hace
 
+### Página de inicio
+
+Presenta el núcleo con la información de sus láminas institucionales (programas,
+reseña, cifras, equipo por cargos y ubicación) y da tres accesos: **constancias**
+para representantes, **profesores** (reportes de ensayo) y **coordinación**. El
+contenido está en [`src/features/inicio/contenido.ts`](src/features/inicio/contenido.ts).
+
+| Ruta | Para quién |
+| --- | --- |
+| `/` | Inicio |
+| `/constancias`, `/p/:codigo` | Representantes: solicitar constancias |
+| `/profesores` | Profesores: reportes mensuales |
+| `/admin` | Coordinación (con clave) |
+
 ### Reportes mensuales
 
 - Indicador por agrupación y mes: fechas de ensayo en un calendario, repertorio

@@ -1,8 +1,35 @@
+/*
+ * Identidad tomada de las láminas institucionales del núcleo: carbón, crema,
+ * verde y acentos menta y amarillo; Oswald para títulos y Source Sans 3 para texto.
+ */
 :root {
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  --tinta: #161b1a;
+  --tinta-suave: #4a5552;
+  --carbon: #111615;
+  --crema: #f2f0eb;
+  --verde: #164f40;
+  --primario: #17624d;
+  --primario-oscuro: #0f4a3a;
+  --primario-suave: #e5f1ec;
+  --primario-borde: #b5d6cb;
+  --primario-fondo: #f3f8f5;
+  --acento: #1f6f78;
+  --menta: #7fc8c1;
+  --amarillo: #f5d10f;
+  --fuente-titulos: 'Oswald', 'Arial Narrow', 'Segoe UI', sans-serif;
+  --fuente-texto: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+
+  font-family: var(--fuente-texto);
   line-height: 1.5;
-  color: #1a1a2e;
-  background: #f4f6fb;
+  color: var(--tinta);
+  background: var(--crema);
+}
+
+h1,
+h2 {
+  font-family: var(--fuente-titulos);
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 * {
@@ -53,8 +80,8 @@ body {
 }
 
 .nav-btn.activo {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: var(--primario);
+  border-color: var(--primario);
   color: #fff;
 }
 
@@ -171,8 +198,8 @@ body {
 }
 
 .campo-fecha-boton:hover {
-  background: #eef2ff;
-  color: #4f46e5;
+  background: var(--primario-suave);
+  color: var(--primario);
 }
 
 .campo-fecha .campo-fecha-nativo {
@@ -206,12 +233,12 @@ body {
 }
 
 .ver-clave:hover {
-  background: #eef2ff;
-  color: #4f46e5;
+  background: var(--primario-suave);
+  color: var(--primario);
 }
 
 .ver-clave:focus-visible {
-  outline: 2px solid #4f46e5;
+  outline: 2px solid var(--primario);
   outline-offset: 1px;
 }
 
@@ -255,7 +282,7 @@ body {
 }
 
 .admin-back-link {
-  color: #6366f1;
+  color: var(--acento);
   text-decoration: none;
   font-size: 0.875rem;
   font-weight: 600;
@@ -506,7 +533,7 @@ textarea {
   font: inherit;
   font-size: max(16px, 1rem);
   background: #fff;
-  color: #1a1a2e;
+  color: var(--tinta);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -520,8 +547,8 @@ input[type='tel']:focus,
 input[type='search']:focus,
 textarea:focus {
   outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  border-color: var(--primario);
+  box-shadow: 0 0 0 3px rgba(23, 98, 77, 0.15);
 }
 
 input::placeholder {
@@ -551,7 +578,7 @@ input[type='radio'] {
   height: 1.15rem;
   margin: 0;
   flex-shrink: 0;
-  accent-color: #4f46e5;
+  accent-color: var(--primario);
 }
 
 .fechas-ensayo-picker {
@@ -574,8 +601,8 @@ input[type='radio'] {
 .fechas-contador {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #4f46e5;
-  background: #eef2ff;
+  color: var(--primario);
+  background: var(--primario-suave);
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
 }
@@ -645,13 +672,13 @@ input[type='radio'] {
 }
 
 .calendario-celda.dia:hover {
-  border-color: #818cf8;
-  background: #eef2ff;
+  border-color: var(--menta);
+  background: var(--primario-suave);
 }
 
 .calendario-celda.dia.seleccionada {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: var(--primario);
+  border-color: var(--primario);
   color: #fff;
   font-weight: 700;
 }
@@ -690,7 +717,7 @@ input[type='radio'] {
 .btn-link {
   border: none;
   background: transparent;
-  color: #6366f1;
+  color: var(--acento);
   font: inherit;
   font-size: 0.875rem;
   cursor: pointer;
@@ -708,7 +735,7 @@ input[type='radio'] {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: #eef2ff;
+  background: var(--primario-suave);
   color: #3730a3;
   padding: 0.35rem 0.6rem;
   border-radius: 999px;
@@ -719,7 +746,7 @@ input[type='radio'] {
   border: none;
   background: transparent;
   cursor: pointer;
-  color: #6366f1;
+  color: var(--acento);
   font-size: 1rem;
   line-height: 1;
   padding: 0;
@@ -767,8 +794,8 @@ input[type='radio'] {
 
 .demografia-item.editable input[type='number']:focus {
   outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px #eef2ff;
+  border-color: var(--primario);
+  box-shadow: 0 0 0 2px var(--primario-suave);
 }
 
 .tema-chip.guardado {
@@ -854,7 +881,7 @@ input[type='radio'] {
 }
 
 .btn-primary {
-  background: #4f46e5;
+  background: var(--primario);
   color: #fff;
 }
 
@@ -1095,8 +1122,8 @@ input[type='radio'] {
 }
 
 .opciones-botones label.activo {
-  border-color: #4f46e5;
-  background: #eef2ff;
+  border-color: var(--primario);
+  background: var(--primario-suave);
 }
 
 /* Un solo día / Varios días: sin estirarse a todo el ancho en pantalla grande. */
@@ -1157,13 +1184,13 @@ input[type='radio'] {
 }
 
 .tipo-card:has(input:focus-visible) {
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 0 0 3px rgba(23, 98, 77, 0.25);
 }
 
 .tipo-card.activo {
-  border-color: #4f46e5;
-  background: #eef2ff;
-  box-shadow: 0 0 0 1px #4f46e5;
+  border-color: var(--primario);
+  background: var(--primario-suave);
+  box-shadow: 0 0 0 1px var(--primario);
 }
 
 .tipo-card-marca {
@@ -1171,7 +1198,7 @@ input[type='radio'] {
   margin-top: 0.35rem;
   padding: 0.1rem 0.55rem;
   border-radius: 999px;
-  background: #4f46e5;
+  background: var(--primario);
   color: #fff;
   font-size: 0.85rem;
   font-weight: 700;
@@ -1255,7 +1282,7 @@ input[type='radio'] {
 }
 
 .campo-hora-periodo button[aria-pressed='true'] {
-  background: #4f46e5;
+  background: var(--primario);
   color: #fff;
 }
 
@@ -1358,14 +1385,14 @@ input[type='radio'] {
 
 .constancia-form .plantilla-resumen,
 .revision-vista .plantilla-resumen {
-  border-color: #c7d2fe;
-  background: #f8faff;
+  border-color: var(--primario-borde);
+  background: var(--primario-fondo);
 }
 
 .plantilla-resumen {
   padding: 1.25rem;
   margin-bottom: 1rem;
-  border: 1px solid #c7d2fe;
+  border: 1px solid var(--primario-borde);
   border-radius: 10px;
 }
 
@@ -1409,7 +1436,7 @@ input[type='radio'] {
   flex-direction: column;
   gap: 0.25rem;
   padding: 1rem 1.1rem;
-  border: 1.5px solid #c7d2fe;
+  border: 1.5px solid var(--primario-borde);
   border-radius: 10px;
   background: #fff;
   font: inherit;
@@ -1418,8 +1445,8 @@ input[type='radio'] {
 }
 
 .plantilla-card:hover {
-  border-color: #4f46e5;
-  background: #eef2ff;
+  border-color: var(--primario);
+  background: var(--primario-suave);
 }
 
 .plantilla-card-libre {
@@ -1429,7 +1456,7 @@ input[type='radio'] {
 
 .plantilla-card-accion {
   margin-top: 0.45rem;
-  color: #4f46e5;
+  color: var(--primario);
   font-weight: 700;
 }
 
@@ -1460,13 +1487,13 @@ input[type='radio'] {
 
 .enlace-corto {
   font-family: ui-monospace, Consolas, monospace;
-  color: #4f46e5;
+  color: var(--primario);
 }
 
 .celda-plantilla {
   display: block;
   font-size: 0.75rem;
-  color: #6366f1;
+  color: var(--acento);
 }
 
 .enlace-plantilla {
@@ -1558,8 +1585,8 @@ a.btn {
 }
 
 .constancia-form .panel-coordinacion {
-  border-color: #c7d2fe;
-  background: #f8faff;
+  border-color: var(--primario-borde);
+  background: var(--primario-fondo);
 }
 
 .panel-coordinacion label {
@@ -1826,8 +1853,8 @@ a.btn {
 }
 
 .menu-admin-item.active {
-  background: #eef2ff;
-  color: #4338ca;
+  background: var(--primario-suave);
+  color: var(--primario-oscuro);
 }
 
 .revision-resumen {
@@ -1879,8 +1906,8 @@ a.btn {
 }
 
 .revision-menu-lista button.activo {
-  background: #eef2ff;
-  color: #4338ca;
+  background: var(--primario-suave);
+  color: var(--primario-oscuro);
   font-weight: 600;
 }
 

@@ -1,0 +1,739 @@
+/* Cabecera común, títulos de página y página de inicio. Paleta en index.css (:root). */
+
+/* ---------- Cabecera del sitio ---------- */
+
+.sitio-cabecera {
+  background: var(--carbon);
+  color: var(--crema);
+}
+
+.sitio-cabecera-interior {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.7rem 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1.5rem;
+}
+
+.sitio-marca {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.sitio-marca img {
+  width: 42px;
+  height: 42px;
+  padding: 4px;
+  border-radius: 6px;
+  background: var(--crema);
+}
+
+.sitio-marca span {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--fuente-titulos);
+  font-size: 1.3rem;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sitio-marca small {
+  margin-top: 0.2rem;
+  font-family: var(--fuente-texto);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--menta);
+}
+
+.sitio-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.sitio-enlace {
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  color: var(--crema);
+  font-size: 1.02rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sitio-enlace:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sitio-enlace.activo {
+  background: var(--amarillo);
+  color: var(--carbon);
+}
+
+.sitio-enlace:focus-visible,
+.inicio a:focus-visible {
+  outline: 3px solid var(--amarillo);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .sitio-nav {
+    width: 100%;
+  }
+
+  .sitio-enlace {
+    flex: 1;
+    padding: 0.6rem 0.4rem;
+    background: rgba(255, 255, 255, 0.07);
+    text-align: center;
+  }
+}
+
+/* ---------- Títulos de página (constancias, profesores) ---------- */
+
+.pagina-etiqueta {
+  margin: 0 0 0.2rem;
+  color: var(--acento) !important;
+  font-family: var(--fuente-titulos);
+  font-size: 0.95rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.app-header h1 {
+  font-size: 2.25rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+/* ---------- Página de inicio ---------- */
+
+.inicio {
+  background: var(--crema);
+  color: var(--tinta);
+  font-size: 1.05rem;
+}
+
+.inicio-ancho {
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.inicio h2 {
+  margin: 0 0 1.5rem;
+  font-size: clamp(1.9rem, 5vw, 2.6rem);
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.inicio h3 {
+  font-family: var(--fuente-titulos);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.inicio-etiqueta {
+  margin: 0 0 0.5rem;
+  color: var(--acento);
+  font-family: var(--fuente-titulos);
+  font-size: 0.95rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.inicio-etiqueta-naranja {
+  color: #b03d10;
+}
+
+.inicio-seccion {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+.inicio-banda {
+  padding: 4rem 0;
+}
+
+.inicio-banda-oscura {
+  background: var(--carbon);
+  color: var(--crema);
+}
+
+.inicio-banda-verde {
+  background: var(--verde);
+  color: var(--crema);
+}
+
+.inicio-banda-oscura .inicio-etiqueta,
+.inicio-banda-verde .inicio-etiqueta {
+  color: var(--menta);
+}
+
+.inicio-banda-clara {
+  background: #faf9f6;
+  border-top: 1px solid #e3e0d8;
+  border-bottom: 1px solid #e3e0d8;
+}
+
+.inicio-parrafo {
+  max-width: 40rem;
+  margin: 0 0 1.5rem;
+  color: var(--tinta-suave);
+}
+
+/* Botones grandes y claros de la portada y secciones. */
+.btn-inicio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  padding: 0.75rem 1.5rem;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font-size: 1.08rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.btn-inicio-amarillo {
+  background: var(--amarillo);
+  color: var(--carbon);
+}
+
+.btn-inicio-amarillo:hover {
+  background: #ffe045;
+}
+
+.btn-inicio-borde {
+  border-color: rgba(242, 240, 235, 0.7);
+  color: var(--crema);
+}
+
+.btn-inicio-borde:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-inicio-verde {
+  background: var(--primario);
+  color: #fff;
+}
+
+.btn-inicio-verde:hover {
+  background: var(--primario-oscuro);
+}
+
+/* Portada: fachada de la sede oscurecida (sin personas). */
+.inicio-portada {
+  padding: 3.5rem 0 2.5rem;
+  background:
+    linear-gradient(rgba(17, 22, 21, 0.86), rgba(17, 22, 21, 0.92)),
+    url('/img/sitio/fachada.jpg') center / cover no-repeat,
+    var(--carbon);
+  color: var(--crema);
+}
+
+.inicio-portada-interior {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2rem;
+  align-items: center;
+}
+
+.inicio-portada .inicio-etiqueta {
+  max-width: 34rem;
+  color: var(--menta);
+  line-height: 1.5;
+}
+
+.inicio-portada h1 {
+  margin: 1.2rem 0 0.8rem;
+  font-size: clamp(3.2rem, 11vw, 6rem);
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.inicio-lema {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0;
+  color: var(--amarillo);
+  font-family: var(--fuente-titulos);
+  font-size: clamp(1.3rem, 4vw, 1.9rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.inicio-lema-linea {
+  flex: 0 0 3.5rem;
+  height: 3px;
+  background: var(--menta);
+}
+
+.inicio-portada-desc {
+  max-width: 34rem;
+  margin: 1.4rem 0 0;
+  font-size: 1.15rem;
+  color: #d9ddd9;
+}
+
+.inicio-portada-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.8rem;
+}
+
+.inicio-logo-caja {
+  width: clamp(180px, 24vw, 280px);
+  padding: 1.6rem;
+  border-radius: 6px;
+  background: #f5f5f3;
+}
+
+.inicio-logo-caja img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.inicio-datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 3rem;
+  margin-top: 2.5rem;
+  margin-bottom: 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(242, 240, 235, 0.25);
+}
+
+.inicio-datos dt {
+  color: var(--menta);
+  font-family: var(--fuente-titulos);
+  font-size: 0.9rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.inicio-datos dd {
+  margin: 0.15rem 0 0;
+}
+
+/* Accesos: tres tarjetas que suben sobre la portada. */
+.inicio-accesos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.inicio-acceso {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1.4rem 1.4rem 1.2rem;
+  border: 1px solid #e3e0d8;
+  border-top: 5px solid var(--primario);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--tinta);
+  text-decoration: none;
+  box-shadow: 0 10px 28px rgba(17, 22, 21, 0.08);
+}
+
+.inicio-acceso:nth-child(1) {
+  border-top-color: var(--amarillo);
+}
+
+.inicio-acceso:nth-child(3) {
+  border-top-color: var(--carbon);
+}
+
+.inicio-acceso:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(17, 22, 21, 0.14);
+}
+
+.inicio-acceso-para {
+  color: var(--acento);
+  font-family: var(--fuente-titulos);
+  font-size: 0.9rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.inicio-acceso-titulo {
+  font-family: var(--fuente-titulos);
+  font-size: 1.55rem;
+  font-weight: 500;
+  line-height: 1.15;
+}
+
+.inicio-acceso-texto {
+  flex: 1;
+  color: var(--tinta-suave);
+}
+
+.inicio-acceso-accion {
+  margin-top: 0.6rem;
+  color: var(--primario);
+  font-weight: 700;
+}
+
+/* Cifras */
+.inicio-cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inicio-cifras li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(242, 240, 235, 0.2);
+}
+
+.inicio-cifras strong {
+  color: var(--menta);
+  font-family: var(--fuente-titulos);
+  font-size: clamp(2.8rem, 8vw, 3.8rem);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.inicio-cifras span {
+  color: #d9ddd9;
+}
+
+/* Programas */
+.inicio-programas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.75rem 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inicio-programas li {
+  padding-top: 1rem;
+  border-top: 5px solid;
+}
+
+.inicio-programas h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1.6rem;
+  text-transform: uppercase;
+}
+
+.inicio-programas p {
+  margin: 0;
+  color: var(--tinta-suave);
+}
+
+/* Programa Simón Bolívar */
+.inicio-escuela {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.inicio-subtitulo {
+  margin: 0 0 0.75rem;
+  color: #b03d10;
+  font-size: 1.1rem;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase;
+}
+
+.inicio-modulos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: modulo;
+}
+
+.inicio-modulos li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.7rem 1rem;
+  border-left: 5px solid #e85a2a;
+  background: #fff;
+  counter-increment: modulo;
+}
+
+.inicio-modulos li::before {
+  content: counter(modulo);
+  min-width: 1.2rem;
+  color: #b03d10;
+  font-family: var(--fuente-titulos);
+  font-size: 1.4rem;
+}
+
+.inicio-escuela-cifra {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inicio-escuela-cifra strong {
+  color: #e85a2a;
+  font-family: var(--fuente-titulos);
+  font-size: clamp(5rem, 16vw, 8rem);
+  font-weight: 500;
+  line-height: 0.9;
+}
+
+.inicio-escuela-cifra span {
+  font-size: 1.2rem;
+  color: var(--tinta-suave);
+}
+
+/* Reseña histórica: línea de tiempo (horizontal en PC, vertical en celular). */
+.inicio-historia {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin: 0;
+  padding: 1rem 0 0;
+  border-top: 2px solid var(--tinta);
+  list-style: none;
+}
+
+.inicio-historia strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--verde);
+  font-family: var(--fuente-titulos);
+  font-size: 1.7rem;
+  font-weight: 500;
+}
+
+.inicio-historia p {
+  margin: 0;
+  color: var(--tinta-suave);
+  font-size: 0.98rem;
+}
+
+.inicio-proyeccion {
+  margin-top: 2.5rem;
+  padding: 1.25rem 1.5rem;
+  border-left: 5px solid var(--acento);
+  background: #fff;
+}
+
+.inicio-proyeccion h3 {
+  margin: 0 0 0.3rem;
+  color: var(--acento);
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.inicio-proyeccion p {
+  margin: 0;
+}
+
+/* Equipo */
+.inicio-equipo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inicio-equipo li {
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(127, 200, 193, 0.5);
+}
+
+.inicio-equipo h3 {
+  margin: 0 0 0.35rem;
+  color: #fff;
+  font-size: 1.3rem;
+}
+
+.inicio-equipo p {
+  margin: 0;
+  color: #cfe1dc;
+}
+
+/* Ubicación */
+.inicio-ubicacion {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.inicio-sede {
+  padding: 1.25rem 1.4rem;
+  border: 1px solid #e3e0d8;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.inicio-sede h3 {
+  margin: 0 0 0.4rem;
+  color: var(--acento);
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.inicio-sede p {
+  margin: 0;
+}
+
+.inicio-contacto a {
+  color: var(--primario);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Cita */
+.inicio-cita figure {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.inicio-cita blockquote {
+  max-width: 52rem;
+  margin: 0;
+  font-size: clamp(1.2rem, 3vw, 1.55rem);
+  font-style: italic;
+  line-height: 1.55;
+}
+
+.inicio-cita figcaption {
+  margin-top: 1.2rem;
+  color: var(--menta);
+  font-family: var(--fuente-titulos);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Pie */
+.inicio-pie {
+  padding: 2.5rem 0 3rem;
+  background: #0b0f0e;
+  color: #c9cfcc;
+  font-size: 0.98rem;
+}
+
+.inicio-pie-interior {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.5rem 2.5rem;
+}
+
+.inicio-pie-interior img {
+  width: 72px;
+  height: auto;
+}
+
+.inicio-pie p {
+  margin: 0.15rem 0;
+}
+
+.inicio-pie-nombre {
+  color: var(--crema);
+  font-family: var(--fuente-titulos);
+  font-size: 1.3rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.inicio-pie-enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-left: auto;
+}
+
+.inicio-pie-enlaces a {
+  color: var(--crema);
+  font-weight: 600;
+}
+
+/* ---------- Ajustes para pantallas medianas y celular ---------- */
+
+@media (max-width: 960px) {
+  .inicio-historia {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 2rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .inicio-portada {
+    padding-top: 2rem;
+  }
+
+  .inicio-portada-interior {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  /* En celular el logo va arriba y más chico. */
+  .inicio-logo-caja {
+    order: -1;
+    width: 130px;
+    padding: 0.9rem;
+  }
+
+  .inicio-portada h1 {
+    margin-top: 0.8rem;
+  }
+
+  .btn-inicio {
+    width: 100%;
+  }
+
+  .inicio-escuela {
+    grid-template-columns: 1fr;
+  }
+
+  .inicio-historia {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    padding: 0 0 0 1.25rem;
+    border-top: 0;
+    border-left: 2px solid var(--tinta);
+  }
+
+  .inicio-seccion,
+  .inicio-banda {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+
+  .inicio-pie-enlaces {
+    margin-left: 0;
+  }
+}
