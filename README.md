@@ -22,8 +22,8 @@ contenido está en [`src/features/inicio/contenido.ts`](src/features/inicio/cont
 | --- | --- |
 | `/` | Inicio |
 | `/constancias`, `/p/:codigo` | Representantes: solicitar constancias |
-| `/profesores` | Profesores: entran con su cédula; reportes de ensayo de sus agrupaciones e informes semanales del Programa Simón Bolívar |
-| `/admin` | Coordinación (con clave): reportes, perfil y horario de cada profesor, informes Simón Bolívar, agrupaciones y constancias |
+| `/profesores` | Profesores: entran con su cédula; reportes de ensayo de sus agrupaciones y clases diarias del Programa Simón Bolívar (con el mensaje para Telegram) |
+| `/admin` | Coordinación (con clave): reportes, perfil y horario de cada profesor, Word semanal del Simón Bolívar, agrupaciones y constancias |
 
 ### Reportes mensuales
 

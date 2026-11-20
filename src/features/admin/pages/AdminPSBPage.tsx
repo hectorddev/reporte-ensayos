@@ -2,18 +2,28 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AccesoCoordinacion } from '../components/AccesoCoordinacion';
 import { ListaInformesPSB } from '../../psb/components/ListaInformesPSB';
-import { descargarInformePSBCoordinacion, listarInformesPSB } from '../../psb/api/psb.api';
+import { WordSemana } from '../../psb/components/WordSemana';
+import { listarInformesPSB } from '../../psb/api/psb.api';
 import { MODULOS_PSB } from '../../../lib/datosEstaticos';
+import type { InformePSB } from '../../psb/tipos';
 
-/** /admin/psb: informes semanales del Programa Simón Bolívar de todas las escuelas. */
+/** /admin/psb: clases del Programa Simón Bolívar y Word semanal de cada escuela. */
 export function AdminPSBPage() {
   return <AccesoCoordinacion>{(clave) => <InformesPSB clave={clave} />}</AccesoCoordinacion>;
 }
 
 function InformesPSB({ clave }: { clave: string }) {
   const [escuela, setEscuela] = useState('');
+  const [abierto, setAbierto] = useState<string | null>(null);
   const informes = useQuery({ queryKey: ['admin-psb'], queryFn: () => listarInformesPSB(clave) });
-  const visibles = (informes.data ?? []).filter((i) => !escuela || i.modulo === escuela);
+  const todos = informes.data ?? [];
+  const visibles = todos.filter((i) => !escuela || i.modulo === escuela);
+
+  /** Agrupaciones que tenía el Word de otra semana de esa escuela (informes anteriores). */
+  const agrupacionesDe = (inf: InformePSB) =>
+    todos
+      .filter((i) => i.modulo === inf.modulo && i.agrupaciones)
+      .sort((a, b) => b.semana.localeCompare(a.semana))[0]?.agrupaciones;
 
   return (
     <div className="admin-dashboard">
@@ -21,8 +31,8 @@ function InformesPSB({ clave }: { clave: string }) {
         <div>
           <h2>Programa Simón Bolívar</h2>
           <p className="fechas-ayuda">
-            Informes semanales que envían los profesores. El Word y las fotos quedan en tu Drive, en la carpeta «Informes
-            PSB».
+            Clases que reportan los formadores cada día. Aquí armas el Word de cada semana; las fotos quedan en tu Drive, en
+            la carpeta «Informes PSB».
           </p>
         </div>
         <button type="button" className="btn btn-secondary" onClick={() => void informes.refetch()}>
@@ -45,8 +55,31 @@ function InformesPSB({ clave }: { clave: string }) {
         informes={visibles}
         cargando={informes.isLoading}
         error={informes.error}
-        descargarWord={(id) => descargarInformePSBCoordinacion(clave, id)}
-        conEnlacesDrive
+        acciones={(inf) => (
+          <>
+            {abierto !== inf.id && (
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => setAbierto(inf.id)}>
+                Armar Word
+              </button>
+            )}
+            {inf.carpeta?.url && (
+              <a className="btn btn-secondary btn-sm" href={inf.carpeta.url} target="_blank" rel="noreferrer">
+                Abrir carpeta en Drive
+              </a>
+            )}
+          </>
+        )}
+        detalle={(inf) =>
+          abierto === inf.id && (
+            <WordSemana
+              key={inf.id}
+              clave={clave}
+              informe={inf}
+              agrupacionesAnteriores={agrupacionesDe(inf)}
+              onCerrar={() => setAbierto(null)}
+            />
+          )
+        }
       />
     </div>
   );

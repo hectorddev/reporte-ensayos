@@ -7,8 +7,8 @@ Script. Quién puede usarlo:
   reportes de las agrupaciones que la coordinación les asignó.
 - **Coordinación**: con la clave de coordinación ve, edita y borra todo, y
   registra a los profesores en el panel (`/admin/profesores`).
-- **Programa Simón Bolívar**: los profesores de ese programa envían el informe
-  semanal de sus escuelas; el Word y las fotos quedan en tu Drive.
+- **Programa Simón Bolívar**: los formadores reportan cada clase de sus
+  escuelas (las fotos quedan en tu Drive) y la coordinación arma el Word semanal.
 
 Sin una cédula registrada o la clave, el servicio no muestra ni guarda nada.
 
@@ -126,16 +126,17 @@ pegarla en `configNube.ts`.
   el mensaje con el formato de Telegram para compartirlo con la foto.
 - **Sin internet** la clase queda guardada en el teléfono y se envía sola apenas
   vuelve la conexión: con la app abierta o al volver a abrirla; en Android
-  (Chrome) también con la app cerrada. El Word de la semana se arma cuando todas
-  las clases llegaron.
-- **Al final de la semana** pulsa «Generar el Word de la semana»: se arma con
-  las clases ya guardadas (sin volver a escribirlas) y queda en la misma carpeta.
-  Si después corrige o quita una clase, la app avisa que hay que volver a
-  generarlo.
-- La hoja **InformesPSB** lista cada informe con el enlace a su carpeta y a su
-  documento. En el panel: **Simón Bolívar**.
-- Al corregir una clase, quitarla o volver a generar el Word, los archivos que
-  ya no se usan van a la papelera de Drive.
+  (Chrome) también con la app cerrada.
+- **El Word de la semana lo arma la coordinación**, no el formador: en el panel,
+  **Simón Bolívar → Armar Word** en la semana y escuela que quieras. Se arma en
+  ese momento con las clases guardadas y sus fotos, así que siempre sale con lo
+  último (si un formador corrige una clase, basta con volver a armarlo). Se
+  completan el evento, las agrupaciones, la cantidad de alumnos (propone la suma
+  de los atendidos de cada clase), instructores, responsable y teléfonos; el
+  panel recuerda lo escrito para cada escuela. El Word se descarga en tu equipo.
+- La hoja **InformesPSB** lista cada semana con el enlace a su carpeta.
+- Al corregir o quitar una clase, las fotos que ya no se usan van a la papelera
+  de Drive.
 - Las fotos pueden tener niños: la carpeta es privada de tu cuenta; no la
   compartas con enlace público.
 

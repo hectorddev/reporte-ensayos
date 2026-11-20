@@ -1,49 +1,88 @@
 import { useState } from 'react';
-import type { SesionProfesor } from '../../../lib/profesorAuth';
 import { INFORME_PSB } from '../config';
-import { descargarInformePSB } from '../api/psb.api';
-import { armarWordSemana, descargar, descargarBase64, wordDesactualizado, type DocumentoListo } from '../lib/enviar';
+import { descargarArchivoPSBCoordinacion } from '../api/psb.api';
+import { armarWordSemana, descargar, type DatosWord, type DocumentoListo } from '../lib/enviar';
 import type { InformePSB } from '../tipos';
 
 interface Props {
-  sesion: SesionProfesor;
+  clave: string;
   informe: InformePSB;
-  /** Agrupaciones del último Word de esa escuela, para proponerlas. */
+  /** Agrupaciones de otra semana de esa escuela, para proponerlas. */
   agrupacionesAnteriores?: string;
-  onActualizado: (semana: InformePSB) => void;
+  onCerrar: () => void;
 }
 
-const fechaHora = (iso: string) =>
-  new Date(iso).toLocaleString('es-VE', { day: '2-digit', month: '2-digit', hour: 'numeric', minute: '2-digit' });
+/** Lo último que escribió la coordinación (por escuela), para no repetirlo cada semana. */
+interface Recordado {
+  telefonos?: string;
+  escuelas?: Record<string, { evento?: string; agrupaciones?: string }>;
+}
+const LLAVE = 'psb_word';
 
-/** Word de la semana: se arma con las clases ya guardadas, sin volver a escribirlas. */
-export function WordSemana({ sesion, informe, agrupacionesAnteriores, onActualizado }: Props) {
-  const formadores = [...new Set(informe.dias.map((d) => d.formador).filter(Boolean))].join(', ');
-  const [evento, setEvento] = useState(informe.evento || INFORME_PSB.eventoPorDefecto);
-  const [agrupaciones, setAgrupaciones] = useState(informe.agrupaciones || agrupacionesAnteriores || '');
-  const [alumnos, setAlumnos] = useState(informe.alumnos ? String(informe.alumnos) : '');
-  const [instructores, setInstructores] = useState(informe.instructores || formadores || sesion.nombre);
+function leerRecordado(): Recordado {
+  try {
+    return JSON.parse(localStorage.getItem(LLAVE) ?? '{}') as Recordado;
+  } catch {
+    return {};
+  }
+}
+
+function recordar(modulo: string, d: DatosWord) {
+  try {
+    const r = leerRecordado();
+    r.telefonos = d.telefonos;
+    r.escuelas = { ...r.escuelas, [modulo]: { evento: d.evento, agrupaciones: d.agrupaciones } };
+    localStorage.setItem(LLAVE, JSON.stringify(r));
+  } catch {
+    // Sin almacenamiento: la próxima vez se vuelve a escribir.
+  }
+}
+
+/** «14 niños y 3 niñas» → 17 */
+const contar = (texto: string) => (texto.match(/\d+/g) ?? []).reduce((n, x) => n + Number(x), 0);
+
+/**
+ * Word de la semana (coordinación): se arma con las clases que guardaron los
+ * formadores y sus fotos, con el formato del núcleo, y se descarga.
+ */
+export function WordSemana({ clave, informe, agrupacionesAnteriores, onCerrar }: Props) {
+  const recordado = leerRecordado();
+  const deEscuela = recordado.escuelas?.[informe.modulo];
+  const formadores = [...new Set(informe.dias.map((d) => d.formador || informe.profesor).filter(Boolean))].join(', ');
+  const atendidos = informe.dias.reduce((n, d) => n + contar(d.atendidos ?? ''), 0);
+
+  const [evento, setEvento] = useState(informe.evento || deEscuela?.evento || INFORME_PSB.eventoPorDefecto);
+  const [agrupaciones, setAgrupaciones] = useState(
+    informe.agrupaciones || deEscuela?.agrupaciones || agrupacionesAnteriores || ''
+  );
+  const [alumnos, setAlumnos] = useState(informe.alumnos ? String(informe.alumnos) : atendidos ? String(atendidos) : '');
+  const [instructores, setInstructores] = useState(informe.instructores || formadores);
+  const [responsable, setResponsable] = useState(formadores);
+  const [telefonos, setTelefonos] = useState(recordado.telefonos || INFORME_PSB.telefonosPorDefecto);
   const [avance, setAvance] = useState('');
   const [error, setError] = useState('');
   const [documento, setDocumento] = useState<DocumentoListo | null>(null);
-  const [bajando, setBajando] = useState(false);
 
   const generar = async () => {
-    if (!evento.trim() || !agrupaciones.trim() || !(Number(alumnos) > 0) || !instructores.trim()) {
-      setError('Completa el nombre del evento, las agrupaciones, la cantidad de alumnos y los instructores.');
+    const datos: DatosWord = {
+      evento: evento.trim(),
+      agrupaciones: agrupaciones.trim(),
+      alumnos: Number(alumnos),
+      instructores: instructores.trim(),
+      responsable: responsable.trim(),
+      telefonos: telefonos.trim(),
+    };
+    if (!datos.evento || !datos.agrupaciones || !(datos.alumnos > 0) || !datos.instructores || !datos.responsable || !datos.telefonos) {
+      setError('Completa todos los datos del Word.');
       return;
     }
     setError('');
     setDocumento(null);
     try {
-      const { informe: guardado, documento: doc } = await armarWordSemana(
-        informe,
-        { evento: evento.trim(), agrupaciones: agrupaciones.trim(), instructores: instructores.trim(), alumnos: Number(alumnos) },
-        { responsable: sesion.nombre, telefonos: sesion.telefonosNucleo || INFORME_PSB.telefonosPorDefecto },
-        setAvance
-      );
+      const doc = await armarWordSemana(informe, datos, (id) => descargarArchivoPSBCoordinacion(clave, id), setAvance);
+      recordar(informe.modulo, datos);
       setDocumento(doc);
-      onActualizado(guardado);
+      descargar(doc.blob, doc.nombre);
     } catch (err) {
       setError(
         err instanceof TypeError
@@ -57,51 +96,35 @@ export function WordSemana({ sesion, informe, agrupacionesAnteriores, onActualiz
     }
   };
 
-  const bajarGuardado = async () => {
-    setBajando(true);
-    try {
-      const { nombre, base64 } = await descargarInformePSB(informe.id);
-      descargarBase64(base64, nombre);
-    } catch (err) {
-      window.alert(err instanceof Error ? err.message : 'No se pudo descargar el Word.');
-    } finally {
-      setBajando(false);
-    }
-  };
+  const campo = (id: string, etiqueta: string, valor: string, cambiar: (v: string) => void, extra?: object) => (
+    <div>
+      <label htmlFor={id}>{etiqueta}</label>
+      <input
+        id={id}
+        type="text"
+        value={valor}
+        onChange={(e) => {
+          cambiar(e.target.value);
+          setError('');
+        }}
+        {...extra}
+      />
+    </div>
+  );
 
   return (
-    <section className="word-semana">
+    <section className="word-semana informe-word">
       <h3>Word de la semana</h3>
       <p className="fechas-ayuda">
-        Se arma con las {informe.dias.length} {informe.dias.length === 1 ? 'clase guardada' : 'clases guardadas'} y sus
-        fotos, con el formato del núcleo, y queda en el Drive de la coordinación.
+        Se arma con {informe.dias.length === 1 ? 'la clase guardada' : `las ${informe.dias.length} clases guardadas`} y sus
+        fotos, con el formato del núcleo. Revisa los datos y descárgalo.
       </p>
 
-      {informe.archivo && informe.wordEn && (
-        <p className={wordDesactualizado(informe) ? 'aviso-info aviso-alerta' : 'aviso-info'}>
-          Word generado el {fechaHora(informe.wordEn)}
-          {informe.wordPor ? ` por ${informe.wordPor}` : ''}.
-          {wordDesactualizado(informe) && ' Después cambiaron las clases: vuelve a generarlo para que salgan.'}
-        </p>
-      )}
-
       <div className="campos-grid">
+        {campo('word-evento', 'Nombre del evento', evento, setEvento)}
+        {campo('word-agrupaciones', 'Agrupaciones participantes', agrupaciones, setAgrupaciones, { placeholder: 'Ej: Básica' })}
         <div>
-          <label htmlFor="word-evento">Nombre del evento</label>
-          <input id="word-evento" type="text" value={evento} onChange={(e) => setEvento(e.target.value)} />
-        </div>
-        <div>
-          <label htmlFor="word-agrupaciones">Agrupaciones participantes</label>
-          <input
-            id="word-agrupaciones"
-            type="text"
-            placeholder="Ej: Básica"
-            value={agrupaciones}
-            onChange={(e) => setAgrupaciones(e.target.value)}
-          />
-        </div>
-        <div>
-          <label htmlFor="word-alumnos">Cantidad de alumnos de la semana</label>
+          <label htmlFor="word-alumnos">Alumnos de la semana</label>
           <input
             id="word-alumnos"
             type="number"
@@ -109,34 +132,36 @@ export function WordSemana({ sesion, informe, agrupacionesAnteriores, onActualiz
             min={1}
             placeholder="Ej: 155"
             value={alumnos}
-            onChange={(e) => setAlumnos(e.target.value)}
+            onChange={(e) => {
+              setAlumnos(e.target.value);
+              setError('');
+            }}
           />
+          {atendidos > 0 && (
+            <p className="fechas-ayuda">Suma de los atendidos de cada clase ({atendidos}); corrígelo si hace falta.</p>
+          )}
         </div>
-        <div>
-          <label htmlFor="word-instructores">Instructor(es)</label>
-          <input id="word-instructores" type="text" value={instructores} onChange={(e) => setInstructores(e.target.value)} />
-        </div>
+        {campo('word-instructores', 'Instructor(es)', instructores, setInstructores)}
+        {campo('word-responsable', 'Responsable del evento', responsable, setResponsable)}
+        {campo('word-telefonos', 'Teléfonos del núcleo', telefonos, setTelefonos)}
       </div>
 
       {error && <p className="error">{error}</p>}
 
       <div className="admin-acciones">
         <button type="button" className="btn btn-primary" onClick={generar} disabled={!!avance}>
-          {avance || (informe.archivo ? 'Volver a generar el Word' : 'Generar el Word de la semana')}
+          {avance || 'Armar y descargar el Word'}
         </button>
-        {documento ? (
+        {documento && (
           <button type="button" className="btn btn-secondary" onClick={() => descargar(documento.blob, documento.nombre)}>
-            Descargar el Word
+            Descargar de nuevo
           </button>
-        ) : (
-          informe.archivo && (
-            <button type="button" className="btn btn-secondary" onClick={bajarGuardado} disabled={bajando}>
-              {bajando ? 'Descargando…' : 'Descargar el Word'}
-            </button>
-          )
         )}
+        <button type="button" className="btn btn-secondary" onClick={onCerrar} disabled={!!avance}>
+          Cerrar
+        </button>
       </div>
-      {documento && <p className="aviso-info">Listo: el Word quedó guardado en el Drive de la coordinación.</p>}
+      {documento && <p className="aviso-info">Listo: se descargó «{documento.nombre}».</p>}
     </section>
   );
 }

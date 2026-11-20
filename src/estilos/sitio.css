@@ -1039,23 +1039,17 @@
   background: #fffbeb;
 }
 
-.estado-word {
-  align-self: flex-start;
-  margin-top: 0.2rem;
-  padding: 0.1rem 0.6rem;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 700;
+/* Coordinación: el Word se arma debajo de la semana, a todo el ancho. */
+.informes-psb .informe-word {
+  flex-basis: 100%;
+  margin-top: 0.25rem;
+  padding: 1rem;
+  background: #fbfaf7;
 }
 
-.estado-listo {
-  background: #ecfdf5;
-  color: #065f46;
-}
-
-.estado-pendiente {
-  background: #fef3c7;
-  color: #92400e;
+.informe-word .campos-grid {
+  margin: 0.75rem 0 1rem;
+  align-items: start;
 }
 
 /* Foto de la clase (una por clase). */

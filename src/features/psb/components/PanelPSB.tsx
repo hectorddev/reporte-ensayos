@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { diaCorto, hoyIso, rangoHoras } from '../../constancias/lib/textoConstancia';
 import { MODULOS_PSB, nombreEnCatalogo } from '../../../lib/datosEstaticos';
 import type { SesionProfesor } from '../../../lib/profesorAuth';
-import { descargarInformePSB, listarMisInformesPSB, quitarDiaPSB } from '../api/psb.api';
+import { listarMisInformesPSB, quitarDiaPSB } from '../api/psb.api';
 import { diasHabiles, semanasRecientes } from '../lib/fechas';
 import { mensajeTelegram } from '../lib/mensaje';
 import { listarPendientes, quitarPendiente, type ClasePendiente } from '../lib/cola';
@@ -11,13 +11,12 @@ import { EVENTO_ENVIADA, EVENTO_PENDIENTES, enviarPendientesAhora, iniciarEnvioA
 import type { DiaPSB, InformePSB } from '../tipos';
 import { ClaseForm } from './ClaseForm';
 import { ListaInformesPSB } from './ListaInformesPSB';
-import { WordSemana } from './WordSemana';
 
 type Vista = 'semana' | 'lista';
 
 /**
- * Programa Simón Bolívar: el formador reporta cada clase el mismo día (con el
- * mensaje para Telegram) y al final de la semana arma el Word con esas clases.
+ * Programa Simón Bolívar: el formador reporta cada clase el mismo día y copia
+ * el mensaje para Telegram. El Word de la semana lo arma la coordinación.
  */
 export function PanelPSB({ sesion }: { sesion: SesionProfesor }) {
   const semanas = semanasRecientes();
@@ -48,9 +47,6 @@ export function PanelPSB({ sesion }: { sesion: SesionProfesor }) {
     .flatMap((i) => i.dias)
     .sort((a, b) => b.fecha.localeCompare(a.fecha));
   const anteriorA = (fecha: string): DiaPSB | undefined => clasesDeLaEscuela.find((d) => d.fecha < fecha) ?? clasesDeLaEscuela[0];
-  const agrupacionesAnteriores = (informes.data ?? [])
-    .filter((i) => i.modulo === modulo && i.agrupaciones)
-    .sort((a, b) => b.semana.localeCompare(a.semana))[0]?.agrupaciones;
 
   /** Pone la semana que devolvió el servicio en la lista, sin volver a pedirla. */
   const actualizar = useCallback(
@@ -152,12 +148,7 @@ export function PanelPSB({ sesion }: { sesion: SesionProfesor }) {
     return (
       <>
         {nav}
-        <ListaInformesPSB
-          informes={informes.data ?? []}
-          cargando={informes.isLoading}
-          error={informes.error}
-          descargarWord={descargarInformePSB}
-        />
+        <ListaInformesPSB informes={informes.data ?? []} cargando={informes.isLoading} error={informes.error} />
       </>
     );
   }
@@ -302,23 +293,6 @@ export function PanelPSB({ sesion }: { sesion: SesionProfesor }) {
         </ul>
       </section>
 
-      {informe && informe.dias.length > 0 && pendientesDeSemana.length > 0 && (
-        <section className="word-semana">
-          <h3>Word de la semana</h3>
-          <p className="aviso-info aviso-alerta">
-            Faltan clases por llegar al servicio. El Word se puede armar cuando se hayan enviado todas.
-          </p>
-        </section>
-      )}
-      {informe && informe.dias.length > 0 && pendientesDeSemana.length === 0 && (
-        <WordSemana
-          key={`${informe.modulo}-${informe.semana}`}
-          sesion={sesion}
-          informe={informe}
-          agrupacionesAnteriores={agrupacionesAnteriores}
-          onActualizado={actualizar}
-        />
-      )}
     </>
   );
 }

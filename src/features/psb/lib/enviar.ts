@@ -1,13 +1,7 @@
-import {
-  MIME_DOCX,
-  descargarArchivoPSB,
-  guardarDiaPSB,
-  guardarInformePSB,
-  subirArchivoPSB,
-} from '../api/psb.api';
-import type { ArchivoDrive, DatosDelDia, DiaFormulario, FotoLocal, InformePSB } from '../tipos';
+import { guardarDiaPSB, subirArchivoPSB, type ArchivoDescargado } from '../api/psb.api';
+import type { ArchivoDrive, DatosDelDia, DatosInforme, DiaFormulario, FotoLocal, InformePSB } from '../tipos';
 import { semanaArchivo, textoSemana } from './fechas';
-import { base64DeBlob, base64DeDataUrl, blobDeBase64 } from './fotos';
+import { base64DeDataUrl, blobDeBase64 } from './fotos';
 import { generarInformeDocx, nombreArchivoInforme } from './generarDocx';
 
 export interface DocumentoListo {
@@ -61,9 +55,9 @@ export async function guardarClase(
   });
 }
 
-/** Foto de Drive → foto en el teléfono (con sus medidas, para el Word). */
-async function fotoDesdeDrive(id: string): Promise<FotoLocal> {
-  const { base64 } = await descargarArchivoPSB(id);
+/** Foto de Drive → foto en el navegador (con sus medidas, para el Word). */
+async function fotoDesdeDrive(id: string, bajar: (id: string) => Promise<ArchivoDescargado>): Promise<FotoLocal> {
+  const { base64 } = await bajar(id);
   const dataUrl = `data:image/jpeg;base64,${base64}`;
   const img = new Image();
   img.src = dataUrl;
@@ -71,16 +65,19 @@ async function fotoDesdeDrive(id: string): Promise<FotoLocal> {
   return { clave: id, dataUrl, ancho: img.naturalWidth, alto: img.naturalHeight };
 }
 
+/** Lo que la coordinación completa para el Word (lo demás sale de las clases). */
+export type DatosWord = Pick<DatosInforme, 'evento' | 'agrupaciones' | 'instructores' | 'responsable' | 'alumnos' | 'telefonos'>;
+
 /**
- * Arma el Word de la semana con las clases guardadas (baja sus fotos de Drive),
- * lo sube a la carpeta de la semana y lo registra.
+ * Arma el Word de la semana con las clases guardadas: baja sus fotos de Drive
+ * (a través del servicio) y lo genera en el navegador, listo para descargar.
  */
 export async function armarWordSemana(
   inf: InformePSB,
-  semanal: { evento: string; agrupaciones: string; instructores: string; alumnos: number },
-  datos: { responsable: string; telefonos: string },
+  datos: DatosWord,
+  bajarFoto: (id: string) => Promise<ArchivoDescargado>,
   avance: Avance
-): Promise<{ informe: InformePSB; documento: DocumentoListo }> {
+): Promise<DocumentoListo> {
   const total = inf.dias.reduce((n, d) => n + d.fotos.length, 0);
   let bajadas = 0;
   const dias: DiaFormulario[] = [];
@@ -89,46 +86,14 @@ export async function armarWordSemana(
     for (const f of dia.fotos) {
       bajadas += 1;
       avance(`Preparando fotos (${bajadas} de ${total})…`);
-      fotos.push(await fotoDesdeDrive(f.id));
+      fotos.push(await fotoDesdeDrive(f.id, bajarFoto));
     }
     dias.push({ fecha: dia.fecha, horaInicio: dia.horaInicio, horaFin: dia.horaFin, descripcion: dia.descripcion, fotos });
   }
 
   avance('Armando el Word…');
-  const blob = await generarInformeDocx({
-    modulo: inf.modulo,
-    escuela: inf.escuela,
-    semana: inf.semana,
-    ...semanal,
-    ...datos,
-    dias,
-  });
-  const documento = { blob, nombre: nombreArchivoInforme(inf.escuela, inf.semana) };
-
-  avance('Guardando el Word en el Drive…');
-  const archivo = await subirArchivoPSB({
-    modulo: inf.modulo,
-    escuela: inf.escuela,
-    carpetaSemana: carpetaSemana(inf.semana),
-    nombre: documento.nombre,
-    mime: MIME_DOCX,
-    base64: await base64DeBlob(blob),
-  });
-  const informe = await guardarInformePSB({
-    modulo: inf.modulo,
-    semana: inf.semana,
-    ...semanal,
-    archivo: { id: archivo.id, url: archivo.url, nombre: archivo.nombre },
-    carpeta: archivo.carpeta,
-  });
-  return { informe, documento };
-}
-
-/** ¿Se guardaron, corrigieron o quitaron clases después del último Word? */
-export function wordDesactualizado(inf: InformePSB): boolean {
-  if (!inf.archivo || !inf.wordEn) return false;
-  const ultimoCambio = inf.clasesEn ?? inf.dias.reduce((m, d) => ((d.guardadoEn ?? '') > m ? d.guardadoEn ?? '' : m), '');
-  return ultimoCambio > inf.wordEn;
+  const blob = await generarInformeDocx({ modulo: inf.modulo, escuela: inf.escuela, semana: inf.semana, ...datos, dias });
+  return { blob, nombre: nombreArchivoInforme(inf.escuela, inf.semana) };
 }
 
 /**
@@ -165,8 +130,4 @@ export function descargar(blob: Blob, nombre: string) {
   enlace.click();
   enlace.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30_000);
-}
-
-export function descargarBase64(base64: string, nombre: string) {
-  descargar(blobDeBase64(base64, MIME_DOCX), nombre);
 }
