@@ -1,4 +1,4 @@
-import { AGRUPACIONES, buscarAgrupacion } from '../../../lib/datosEstaticos';
+import { buscarAgrupacion, cargarAgrupaciones } from '../../../lib/agrupaciones';
 import { guardarReporte, obtenerReportes } from '../../../lib/nube';
 import {
   totalMatricula,
@@ -17,12 +17,10 @@ import {
 export function formDataAReporte(
   data: ReporteMensualFormData
 ): Omit<ReporteMensualGuardado, 'id' | 'createdAt'> {
-  const agrupacion =
-    buscarAgrupacion(data.agrupacionId) ?? {
-      id: data.agrupacionId,
-      codigo: data.agrupacionId,
-      nombre: data.agrupacionId,
-    };
+  const delCatalogo = buscarAgrupacion(data.agrupacionId);
+  const agrupacion = delCatalogo
+    ? { id: delCatalogo.id, codigo: delCatalogo.codigo, nombre: delCatalogo.nombre }
+    : { id: data.agrupacionId, codigo: data.agrupacionId, nombre: data.agrupacionId };
 
   const repertorioTexto = data.temasRepertorio.filter(Boolean).join('\n') || null;
 
@@ -62,8 +60,9 @@ export function construirRespuesta(
   };
 }
 
-export function fetchAgrupaciones(): Promise<Agrupacion[]> {
-  return Promise.resolve(AGRUPACIONES);
+/** Agrupaciones activas del catálogo (lo edita la coordinación). */
+export async function fetchAgrupaciones(): Promise<Agrupacion[]> {
+  return (await cargarAgrupaciones()).filter((a) => a.activa);
 }
 
 export interface FiltrosReportes {

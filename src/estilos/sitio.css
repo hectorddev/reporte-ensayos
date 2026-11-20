@@ -938,3 +938,244 @@
 .informes-psb li > div:first-child span:nth-child(2) {
   font-weight: 600;
 }
+
+/* Semana del Programa Simón Bolívar: un renglón por día. */
+.psb-semana h3 {
+  margin: 1.5rem 0 0.25rem;
+}
+
+.semana-dias {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.semana-dias li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  padding: 0.8rem 1rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.semana-dias li.guardado {
+  border-color: var(--primario-borde);
+  background: var(--primario-fondo);
+}
+
+.semana-dias li > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.semana-dias strong {
+  font-size: 1.05rem;
+}
+
+.mensaje-telegram {
+  margin: 0.5rem 0 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  font-family: var(--fuente-texto);
+  font-size: 0.98rem;
+  line-height: 1.5;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.clase-psb h2 {
+  margin: 0.75rem 0 0;
+}
+
+.clase-psb .alert-error ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.fotos-guardadas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  list-style: none;
+}
+
+.fotos-guardadas li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem 0.35rem 0.8rem;
+  border: 1px solid var(--primario-borde);
+  border-radius: 8px;
+  background: var(--primario-fondo);
+}
+
+.word-semana {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid #e3e0d8;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.word-semana h3 {
+  margin-top: 0;
+}
+
+.aviso-alerta {
+  border-left-color: #b45309;
+  background: #fffbeb;
+}
+
+.estado-word {
+  align-self: flex-start;
+  margin-top: 0.2rem;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.estado-listo {
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+.estado-pendiente {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Foto de la clase (una por clase). */
+.foto-clase {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  max-height: 280px;
+  margin: 0 0 0.5rem;
+  border-radius: 8px;
+  background: #fff;
+  object-fit: contain;
+}
+
+.foto-peso {
+  margin: 0 0 0.75rem;
+}
+
+/* Perfil del profesor: horario semanal. */
+.profesor-nombre {
+  color: var(--primario);
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.profesor-form .alert-error ul,
+.admin-dashboard > .alert-error ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.horario-semanal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.horario-semanal-dia {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.horario-semanal-dia > strong {
+  font-size: 1.02rem;
+}
+
+.turnos {
+  max-width: 30rem;
+}
+
+.turnos label span {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.turnos small {
+  color: var(--tinta-suave);
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.horario-semanal-dia > .btn {
+  align-self: flex-start;
+}
+
+.horario-resumen {
+  margin-top: 1rem;
+}
+
+.horario-resumen ul {
+  margin: 0.3rem 0 0;
+  padding-left: 1.2rem;
+}
+
+/* Catálogo de agrupaciones. */
+.agrupacion-nueva {
+  margin-bottom: 1rem;
+}
+
+.agrupacion-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.agrupacion-fila input[type='text'] {
+  flex: 1 1 14rem;
+}
+
+.agrupaciones-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agrupaciones-lista li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.agrupaciones-lista li.inactiva {
+  background: #f8fafc;
+  opacity: 0.85;
+}
+
+.agrupaciones-lista .check-linea {
+  margin: 0;
+}

@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { CabeceraSitio } from '../components/CabeceraSitio';
 import { ReporteMensualForm } from '../features/reporte-mensual/components/ReporteMensualForm';
 import { ReportesLista } from '../features/reporte-mensual/components/ReportesLista';
 import { useReportesMensuales } from '../features/reporte-mensual/hooks/useReportesMensuales';
 import { entrarProfesor } from '../features/profesores/api/profesores.api';
-import { AGRUPACIONES, MODULOS_PSB, PROGRAMA_PSB, nombreEnCatalogo } from '../lib/datosEstaticos';
-import { InformePSBForm } from '../features/psb/components/InformePSBForm';
-import { ListaInformesPSB } from '../features/psb/components/ListaInformesPSB';
-import { descargarInformePSB, listarMisInformesPSB } from '../features/psb/api/psb.api';
+import { MODULOS_PSB, PROGRAMA_PSB, nombreEnCatalogo } from '../lib/datosEstaticos';
+import { useCatalogoAgrupaciones, type AgrupacionCatalogo } from '../lib/agrupaciones';
+import { resumenHorario } from '../features/profesores/lib/horario';
+import { PanelPSB } from '../features/psb/components/PanelPSB';
 import { ErrorServicio } from '../lib/nube';
 import {
   actualizarPerfilProfesor,
@@ -24,10 +24,12 @@ type Vista = 'nuevo' | 'lista';
 type Area = 'ensayo' | 'psb';
 
 /** Agrupaciones del profesor en el orden del catálogo (las desconocidas, con su código). */
-function agrupacionesDe(sesion: SesionProfesor): Agrupacion[] {
-  const conocidas = AGRUPACIONES.filter((a) => sesion.agrupaciones.includes(a.id));
+function agrupacionesDe(sesion: SesionProfesor, catalogo: AgrupacionCatalogo[]): Agrupacion[] {
+  const conocidas = catalogo
+    .filter((a) => sesion.agrupaciones.includes(a.id))
+    .map((a) => ({ id: a.id, codigo: a.codigo, nombre: a.nombre }));
   const otras = sesion.agrupaciones
-    .filter((id) => !AGRUPACIONES.some((a) => a.id === id))
+    .filter((id) => !catalogo.some((a) => a.id === id))
     .map((id) => ({ id, codigo: id, nombre: id }));
   return [...conocidas, ...otras];
 }
@@ -163,7 +165,8 @@ function EntradaProfesor({ aviso, onEntrar }: { aviso: string; onEntrar: (s: Ses
 }
 
 function PanelProfesor({ sesion, onSalir }: { sesion: SesionProfesor; onSalir: () => void }) {
-  const agrupaciones = agrupacionesDe(sesion);
+  const { data: catalogo } = useCatalogoAgrupaciones();
+  const agrupaciones = agrupacionesDe(sesion, catalogo);
   const tieneEnsayo = agrupaciones.length > 0;
   const tienePSB = sesion.programas.includes(PROGRAMA_PSB) && sesion.modulos.length > 0;
   const [area, setArea] = useState<Area>(tieneEnsayo ? 'ensayo' : 'psb');
@@ -194,6 +197,9 @@ function PanelProfesor({ sesion, onSalir }: { sesion: SesionProfesor; onSalir: (
                 {sesion.modulos.length === 1 ? 'Escuela (Simón Bolívar): ' : 'Escuelas (Simón Bolívar): '}
                 {sesion.modulos.map((id) => nombreEnCatalogo(MODULOS_PSB, id)).join(' · ')}
               </p>
+            )}
+            {sesion.horario && sesion.horario.length > 0 && (
+              <p className="fechas-ayuda">Tu horario: {resumenHorario(sesion.horario)}</p>
             )}
           </div>
           <button type="button" className="btn btn-secondary btn-sm" onClick={onSalir}>
@@ -226,7 +232,7 @@ function PanelProfesor({ sesion, onSalir }: { sesion: SesionProfesor; onSalir: (
       ) : areaVisible === 'ensayo' ? (
         <AreaEnsayo agrupaciones={agrupaciones} />
       ) : (
-        <AreaPSB sesion={sesion} />
+        <PanelPSB sesion={sesion} />
       )}
     </>
   );
@@ -266,47 +272,6 @@ function AreaEnsayo({ agrupaciones }: { agrupaciones: Agrupacion[] }) {
         <ReporteMensualForm agrupaciones={agrupaciones} reportes={reportes} onGuardadoExitoso={irALista} />
       ) : (
         <ReportesLista agrupaciones={agrupaciones} />
-      )}
-    </>
-  );
-}
-
-function AreaPSB({ sesion }: { sesion: SesionProfesor }) {
-  const [vista, setVista] = useState<Vista>('nuevo');
-  const informes = useQuery({ queryKey: ['psb-mis-informes', sesion.cedula], queryFn: listarMisInformesPSB });
-
-  return (
-    <>
-      <nav className="app-nav" aria-label="Informes Simón Bolívar">
-        <button
-          type="button"
-          className={`nav-btn ${vista === 'nuevo' ? 'activo' : ''}`}
-          aria-pressed={vista === 'nuevo'}
-          onClick={() => setVista('nuevo')}
-        >
-          Nuevo informe
-        </button>
-        <button
-          type="button"
-          className={`nav-btn ${vista === 'lista' ? 'activo' : ''}`}
-          aria-pressed={vista === 'lista'}
-          onClick={() => {
-            void informes.refetch();
-            setVista('lista');
-          }}
-        >
-          Mis informes
-        </button>
-      </nav>
-      {vista === 'nuevo' ? (
-        <InformePSBForm sesion={sesion} enviados={informes.data} onEnviado={() => void informes.refetch()} />
-      ) : (
-        <ListaInformesPSB
-          informes={informes.data ?? []}
-          cargando={informes.isLoading}
-          error={informes.error}
-          descargarWord={descargarInformePSB}
-        />
       )}
     </>
   );

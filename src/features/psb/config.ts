@@ -12,6 +12,11 @@ export const INFORME_PSB = {
   programa: 'PROGRAMA SIMÓN BOLÍVAR',
   telefonosPorDefecto: '0276-3945614',
   eventoPorDefecto: 'Clases grupales',
-  /** Fotos por día (más no caben bien en la hoja). */
-  maxFotosPorDia: 4,
+  /** Encabezado del mensaje de Telegram. */
+  estado: 'Táchira',
+  nucleo: 'Palmira I',
+  /** Sugerencias para «Tipo de actividad». */
+  tiposActividad: ['Iniciación musical', 'Coral', 'Orquestal', 'Alma Llanera', 'Clases grupales'],
+  /** Una foto por clase: la del mensaje de Telegram y la memoria fotográfica. */
+  maxFotosPorDia: 1,
 };

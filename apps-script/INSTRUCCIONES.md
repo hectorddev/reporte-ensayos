@@ -39,6 +39,9 @@ Propiedades opcionales (mismo lugar):
 - `TELEFONOS_NUCLEO`: lo que el informe PSB pone en «Teléfonos de contacto
   (núcleo)», por ejemplo `0276-3945614 / 0414-0000000`. Si no está, va solo el
   0276-3945614. Está aquí y no en el sitio para no publicar números personales.
+- `LIDER_PSB`: nombre del líder del Programa Simón Bolívar para el mensaje de
+  Telegram (ej. `Lcdo. …`). Si no está, cada formador lo escribe una vez en su
+  teléfono.
 - `CARPETA_PSB_ID`: id de una carpeta de Drive donde guardar los informes PSB
   (lo que va después de `/folders/` en su enlace). Si no está, se crea
   «Informes PSB» en la raíz de tu Drive.
@@ -91,11 +94,23 @@ pegarla en `configNube.ts`.
 
 ## Profesores
 
-- Se registran desde el panel: **Profesores → Registrar profesor** (nombre,
-  cédula y agrupaciones). Al guardar se puede avisarles por WhatsApp.
-- Quedan en la hoja **Profesores** (Cédula | Nombre | Agrupaciones). Las
-  agrupaciones van con su código (ej. `CORO_INFANTIL, DOPIM`); también se pueden
+- Se registran desde el panel: **Profesores → + Registrar profesor**. Cada uno
+  tiene su página de perfil (tocando su nombre) con sus datos, programas,
+  agrupaciones, escuelas y **horario semanal** (mañana, tarde u otro horario por
+  día). Al guardar se puede avisarles por WhatsApp. El profesor ve su horario al
+  entrar.
+- Quedan en la hoja **Profesores** (Cédula | Nombre | Agrupaciones | … |
+  Horario). Las agrupaciones van con su código (ej. `CORO_INFANTIL, DOPIM`) y el
+  horario como `Lunes 08:00-12:00; Martes 14:00-18:00`; también se pueden
   corregir a mano en la hoja.
+
+## Agrupaciones
+
+- Su lista está en la hoja **Agrupaciones** (Código | Nombre | Activa). Se crea
+  sola con las agrupaciones que ya existían.
+- En el panel, **Agrupaciones** permite cambiar el nombre, agregar nuevas o
+  desactivarlas (dejan de salir en los formularios). Los reportes y constancias
+  ya hechos conservan el nombre que tenían. El código no cambia nunca.
 - **Quitar acceso** borra al profesor de la lista; sus reportes se conservan.
 - Si dos profesores llevan la misma agrupación, el mes es uno solo: el último en
   guardar lo actualiza (la columna «Actualizado por» dice quién fue).
@@ -105,14 +120,22 @@ pegarla en `configNube.ts`.
 - Al registrar a un profesor marca sus **programas** (pueden ser varios). Si
   está en Simón Bolívar, marca también sus **escuelas**: solo podrá hacer
   informes de esas.
-- El profesor elige escuela y semana, marca los días de clase, escribe qué se
-  trabajó y agrega hasta 4 fotos por día. El sitio arma el Word con el formato
-  del núcleo y lo sube con las fotos a
-  **Informes PSB / Escuela / Semana del …** en tu Drive.
+- **Cada día**, al terminar la clase, el formador la reporta: horario, tipo de
+  actividad, estudiantes atendidos, niveles, personal adulto, repertorio y una
+  foto. Se guarda en **Informes PSB / Escuela / Semana del …** y la app le arma
+  el mensaje con el formato de Telegram para compartirlo con la foto.
+- **Sin internet** la clase queda guardada en el teléfono y se envía sola apenas
+  vuelve la conexión: con la app abierta o al volver a abrirla; en Android
+  (Chrome) también con la app cerrada. El Word de la semana se arma cuando todas
+  las clases llegaron.
+- **Al final de la semana** pulsa «Generar el Word de la semana»: se arma con
+  las clases ya guardadas (sin volver a escribirlas) y queda en la misma carpeta.
+  Si después corrige o quita una clase, la app avisa que hay que volver a
+  generarlo.
 - La hoja **InformesPSB** lista cada informe con el enlace a su carpeta y a su
   documento. En el panel: **Simón Bolívar**.
-- Si se envía de nuevo el informe de la misma escuela y semana, reemplaza al
-  anterior y sus archivos van a la papelera de Drive.
+- Al corregir una clase, quitarla o volver a generar el Word, los archivos que
+  ya no se usan van a la papelera de Drive.
 - Las fotos pueden tener niños: la carpeta es privada de tu cuenta; no la
   compartas con enlace público.
 

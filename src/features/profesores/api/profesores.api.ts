@@ -1,4 +1,5 @@
 import { llamarServicio } from '../../../lib/nube';
+import type { BloqueHorario } from '../lib/horario';
 import { normalizarCedula } from '../../../lib/profesorAuth';
 
 /** Profesor registrado por la coordinación (hoja «Profesores» del servicio de reportes). */
@@ -11,9 +12,11 @@ export interface Profesor {
   programas: string[];
   /** Escuelas del Programa Simón Bolívar. */
   modulos: string[];
+  /** Horario semanal (lo carga la coordinación). */
+  horario: BloqueHorario[];
 }
 
-export type PerfilProfesor = Omit<Profesor, 'cedula'> & { telefonosNucleo?: string };
+export type PerfilProfesor = Omit<Profesor, 'cedula'> & { telefonosNucleo?: string; liderPSB?: string };
 
 /** Comprueba la cédula y devuelve nombre y agrupaciones. */
 export function entrarProfesor(cedula: string): Promise<PerfilProfesor> {

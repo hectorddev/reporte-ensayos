@@ -14,6 +14,10 @@ export interface SesionProfesor {
   modulos: string[];
   /** Teléfonos del núcleo para los informes (los configura la coordinación). */
   telefonosNucleo?: string;
+  /** Líder del Programa Simón Bolívar, para el mensaje de Telegram. */
+  liderPSB?: string;
+  /** Horario semanal que cargó la coordinación. */
+  horario?: { dia: string; horaInicio: string; horaFin: string }[];
 }
 
 const textos = (v: unknown): string[] => (Array.isArray(v) ? v.filter((a): a is string => typeof a === 'string') : []);
@@ -33,6 +37,8 @@ function leer(almacen: () => Storage): SesionProfesor | null {
       programas: textos(s.programas),
       modulos: textos(s.modulos),
       telefonosNucleo: typeof s.telefonosNucleo === 'string' ? s.telefonosNucleo : undefined,
+      liderPSB: typeof s.liderPSB === 'string' ? s.liderPSB : undefined,
+      horario: Array.isArray(s.horario) ? s.horario : [],
     };
   } catch {
     return null;

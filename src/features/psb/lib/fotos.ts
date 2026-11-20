@@ -1,8 +1,15 @@
 import type { FotoLocal } from '../tipos';
 
-/** Lado mayor de las fotos: suficiente para imprimir y liviano para subir con datos móviles. */
-const LADO_MAXIMO = 1600;
-const CALIDAD = 0.82;
+/**
+ * Optimización de las fotos en el teléfono antes de subirlas.
+ * - Lado mayor de 1280 px: el tamaño al que Telegram deja las fotos, y a 13 cm
+ *   de ancho en el Word son ~250 ppp (nítida al imprimir).
+ * - JPEG con la mejor calidad que quepa en ~180 KB (una foto de 12 MP de 4 MB
+ *   queda unas 25 veces más liviana): sube rápido aun con datos móviles.
+ */
+const LADO_MAXIMO = 1280;
+const PESO_OBJETIVO = 180 * 1024;
+const CALIDADES = [0.8, 0.72, 0.64, 0.56];
 
 /** La imagen con la orientación correcta (las fotos del celular traen la rotación aparte). */
 async function abrir(archivo: File): Promise<ImageBitmap | HTMLImageElement> {
@@ -24,7 +31,22 @@ async function abrir(archivo: File): Promise<ImageBitmap | HTMLImageElement> {
   }
 }
 
-/** Reduce la foto a JPEG de hasta 1600 px por lado. */
+function comoJpeg(lienzo: HTMLCanvasElement, calidad: number): Promise<Blob> {
+  return new Promise((resolve, reject) =>
+    lienzo.toBlob((b) => (b ? resolve(b) : reject(new Error('No se pudo preparar la foto.'))), 'image/jpeg', calidad)
+  );
+}
+
+function dataUrlDeBlob(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const lector = new FileReader();
+    lector.onload = () => resolve(String(lector.result));
+    lector.onerror = () => reject(lector.error ?? new Error('No se pudo leer la foto.'));
+    lector.readAsDataURL(blob);
+  });
+}
+
+/** Reduce la foto a JPEG de hasta 1280 px por lado y ~180 KB. */
 export async function prepararFoto(archivo: File): Promise<FotoLocal> {
   const imagen = await abrir(archivo);
   const anchoOriginal = 'naturalWidth' in imagen ? imagen.naturalWidth : imagen.width;
@@ -38,17 +60,34 @@ export async function prepararFoto(archivo: File): Promise<FotoLocal> {
   lienzo.height = alto;
   const ctx = lienzo.getContext('2d');
   if (!ctx) throw new Error('No se pudo preparar la foto.');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, ancho, alto);
   ctx.drawImage(imagen, 0, 0, ancho, alto);
   if ('close' in imagen) imagen.close();
 
+  // La mejor calidad que quepa en el peso objetivo (las fotos simples ya caben con la primera).
+  let jpeg = await comoJpeg(lienzo, CALIDADES[0]);
+  for (const calidad of CALIDADES.slice(1)) {
+    if (jpeg.size <= PESO_OBJETIVO) break;
+    jpeg = await comoJpeg(lienzo, calidad);
+  }
+
   return {
     clave: crypto.randomUUID(),
-    dataUrl: lienzo.toDataURL('image/jpeg', CALIDAD),
+    dataUrl: await dataUrlDeBlob(jpeg),
     ancho,
     alto,
+    peso: jpeg.size,
+    pesoOriginal: archivo.size,
   };
+}
+
+/** 4_250_000 → «4,1 MB»; 180_000 → «176 KB». */
+export function textoPeso(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toLocaleString('es-VE', { maximumFractionDigits: 1 })} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
 /** «data:image/jpeg;base64,AAAA» → bytes. */

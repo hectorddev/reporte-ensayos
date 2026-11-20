@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Controller, useFieldArray, type RegisterOptions, type UseFormReturn } from 'react-hook-form';
-import { AGRUPACIONES } from '../../../lib/datosEstaticos';
+import { useCatalogoAgrupaciones } from '../../../lib/agrupaciones';
 import { CampoFecha } from './CampoFecha';
 import { CampoHora } from './CampoHora';
 import { ResumenPlantilla } from './ResumenPlantilla';
@@ -143,9 +143,12 @@ export function CampoAgrupacion({ form, modo, opcional = false }: PropsAgrupacio
   } = form;
   const agrupacionId = watch('agrupacionId');
   const verNombre = agrupacionId === AGRUPACION_OTRA || (modo === 'coordinacion' && !!agrupacionId);
+  const { data: catalogo } = useCatalogoAgrupaciones();
+  // Las inactivas no se ofrecen, salvo la que ya estaba elegida (al revisar una solicitud vieja).
+  const opciones = catalogo.filter((a) => a.activa || a.id === agrupacionId);
 
   const elegir = (id: string) => {
-    const agr = AGRUPACIONES.find((a) => a.id === id);
+    const agr = catalogo.find((a) => a.id === id);
     setValue('agrupacionNombre', agr ? agr.nombre : '', { shouldValidate: !!agr });
   };
 
@@ -161,7 +164,7 @@ export function CampoAgrupacion({ form, modo, opcional = false }: PropsAgrupacio
           })}
         >
           <option value="">{opcional ? 'Cualquiera (la elige quien solicita)' : 'Selecciona…'}</option>
-          {AGRUPACIONES.map((a) => (
+          {opciones.map((a) => (
             <option key={a.id} value={a.id}>
               {a.nombre}
             </option>

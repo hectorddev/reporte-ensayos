@@ -107,14 +107,22 @@ export async function generarInformeDocx(d: DatosInforme): Promise<Blob> {
       ],
     });
 
-  /** Tabla de una columna: título en rojo y contenido debajo. */
-  const tablaSimple = (titulo: string, contenido: InstanceType<typeof Paragraph>[]) =>
+  const sinBorde = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+
+  /**
+   * Tabla de una columna: título en rojo y debajo los bloques de contenido. Con
+   * `bloquesEnteros` cada bloque va en su fila sin dividirse entre páginas (el
+   * título del día queda junto a sus fotos); sin líneas entre bloques, se ve
+   * como una sola caja.
+   */
+  const tablaSimple = (titulo: string, bloques: InstanceType<typeof Paragraph>[][], bloquesEnteros = false) =>
     new Table({
       width: { size: ANCHO_UTIL, type: WidthType.DXA },
       columnWidths: [ANCHO_UTIL],
       layout: TableLayoutType.FIXED,
       rows: [
         new TableRow({
+          tableHeader: bloquesEnteros,
           children: [
             new TableCell({
               width: { size: ANCHO_UTIL, type: WidthType.DXA },
@@ -124,16 +132,30 @@ export async function generarInformeDocx(d: DatosInforme): Promise<Blob> {
             }),
           ],
         }),
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: ANCHO_UTIL, type: WidthType.DXA },
-              borders: bordes,
-              margins: { top: 120, bottom: 120, left: 140, right: 140 },
-              children: contenido,
-            }),
-          ],
-        }),
+        ...bloques.map(
+          (contenido, i) =>
+            new TableRow({
+              cantSplit: bloquesEnteros,
+              children: [
+                new TableCell({
+                  width: { size: ANCHO_UTIL, type: WidthType.DXA },
+                  borders: {
+                    left: borde,
+                    right: borde,
+                    top: i === 0 ? borde : sinBorde,
+                    bottom: i === bloques.length - 1 ? borde : sinBorde,
+                  },
+                  margins: {
+                    top: i === 0 ? 120 : 0,
+                    bottom: i === bloques.length - 1 ? 120 : 0,
+                    left: 140,
+                    right: 140,
+                  },
+                  children: contenido,
+                }),
+              ],
+            })
+        ),
       ],
     });
 
@@ -162,26 +184,27 @@ export async function generarInformeDocx(d: DatosInforme): Promise<Blob> {
     ],
   });
 
-  const propositos = tablaSimple(
-    'PROPÓSITOS DEL EVENTO (DESCRIPCIÓN):',
+  const propositos = tablaSimple('PROPÓSITOS DEL EVENTO (DESCRIPCIÓN):', [
     dias.flatMap((dia, i) => [
       ...(i > 0 ? [new Paragraph({ children: [] })] : []),
       parrafo([texto(`${tituloClase(dia.fecha)}: `, { bold: true }), texto(mayus(dia.descripcion))], { justificado: true }),
-    ])
-  );
+    ]),
+  ]);
 
   const titulo = (t: string) =>
     new Paragraph({
       alignment: AlignmentType.CENTER,
+      keepNext: true,
       spacing: { before: 200, after: 120 },
       children: [new TextRun({ text: t, font: 'Calibri', size: 24, bold: true })],
     });
 
+  // Un bloque por día (título y sus fotos), que no se parte entre páginas.
   const memoria = tablaSimple(
     'MEMORIA FOTOGRÁFICA:',
     dias
       .filter((dia) => dia.fotos.length > 0)
-      .flatMap((dia) => {
+      .map((dia) => {
         const sola = dia.fotos.length === 1;
         const filas: InstanceType<typeof Paragraph>[] = [];
         for (let i = 0; i < dia.fotos.length; i += 2) {
@@ -198,7 +221,8 @@ export async function generarInformeDocx(d: DatosInforme): Promise<Blob> {
           );
         }
         return [titulo(tituloClase(dia.fecha)), ...filas];
-      })
+      }),
+    true
   );
 
   const encabezado = new Header({

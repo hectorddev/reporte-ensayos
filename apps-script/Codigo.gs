@@ -15,14 +15,17 @@
  * La hoja «Reportes» guarda columnas legibles + datos_json (columna 17) con el
  * reporte completo para la app. La hoja «Profesores» se puede leer y corregir a
  * mano: Cédula | Nombre | Agrupaciones | Actualizado | Programas | Escuelas PSB
- * (códigos separados por coma).
+ * (códigos separados por coma) | Horario («Lunes 08:00-12:00; Martes 14:00-18:00»).
+ * La hoja «Agrupaciones» (Código | Nombre | Activa) es el catálogo que usa todo
+ * el sitio; la coordinación cambia nombres o agrega agrupaciones desde el panel.
  *
- * Programa Simón Bolívar: los profesores de ese programa suben el informe
- * semanal de cada escuela asignada (Word armado en el sitio + fotos). Se guardan
- * en Drive, en «Informes PSB / Escuela / Semana del …» (o dentro de la carpeta
- * de la propiedad CARPETA_PSB_ID), y quedan listados en la hoja «InformesPSB».
- * La propiedad opcional TELEFONOS_NUCLEO es lo que el informe pone como
- * teléfonos de contacto del núcleo.
+ * Programa Simón Bolívar: el formador guarda cada clase el mismo día (datos +
+ * fotos) y comparte el mensaje en Telegram; al final de la semana el sitio arma
+ * el Word con esas clases. Todo queda en Drive, en «Informes PSB / Escuela /
+ * Semana del …» (o dentro de la carpeta de la propiedad CARPETA_PSB_ID), y
+ * listado en la hoja «InformesPSB». Propiedades opcionales: TELEFONOS_NUCLEO
+ * (teléfonos del núcleo en el Word) y LIDER_PSB (líder del programa en el
+ * mensaje de Telegram).
  */
 
 var HOJA_REPORTES = 'Reportes';
@@ -38,7 +41,8 @@ var ENCABEZADOS = [
 ];
 var COL_ID = 1;
 var COL_JSON = 17; // posición de datos_json (no moverla: la usan los reportes ya guardados)
-var ENCABEZADOS_PROFESORES = ['Cédula', 'Nombre', 'Agrupaciones', 'Actualizado', 'Programas', 'Escuelas PSB'];
+var ENCABEZADOS_PROFESORES = ['Cédula', 'Nombre', 'Agrupaciones', 'Actualizado', 'Programas', 'Escuelas PSB', 'Horario'];
+var DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 var PROGRAMA_PSB = 'SIMON_BOLIVAR';
 
 /* ---------- Hojas ---------- */
@@ -78,6 +82,38 @@ function lista_(texto) {
     .split(',')
     .map(function (a) { return a.trim(); })
     .filter(String);
+}
+
+/** «Lunes 08:00-12:00; Martes 14:00-18:00» → [{ dia, horaInicio, horaFin }] */
+function horarioDeTexto_(texto) {
+  return String(texto || '')
+    .split(';')
+    .map(function (b) { return b.trim(); })
+    .filter(String)
+    .map(function (b) {
+      var m = /^(\S+)\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/.exec(b);
+      if (!m || DIAS_SEMANA.indexOf(m[1]) < 0) return null;
+      var dos = function (h) { return h.length === 4 ? '0' + h : h; };
+      return { dia: m[1], horaInicio: dos(m[2]), horaFin: dos(m[3]) };
+    })
+    .filter(function (b) { return b; });
+}
+
+/** Horario que llega del sitio, saneado y ordenado por día y hora. */
+function horario_(bloques) {
+  return (Array.isArray(bloques) ? bloques : [])
+    .filter(function (b) {
+      return b && DIAS_SEMANA.indexOf(b.dia) >= 0 && /^\d{2}:\d{2}$/.test(b.horaInicio) && /^\d{2}:\d{2}$/.test(b.horaFin) && b.horaFin > b.horaInicio;
+    })
+    .slice(0, 40)
+    .map(function (b) { return { dia: b.dia, horaInicio: b.horaInicio, horaFin: b.horaFin }; })
+    .sort(function (a, b) {
+      return DIAS_SEMANA.indexOf(a.dia) - DIAS_SEMANA.indexOf(b.dia) || (a.horaInicio < b.horaInicio ? -1 : 1);
+    });
+}
+
+function textoDeHorario_(bloques) {
+  return bloques.map(function (b) { return b.dia + ' ' + b.horaInicio + '-' + b.horaFin; }).join('; ');
 }
 
 /** Lista de códigos que llega del sitio, saneada. */
@@ -126,6 +162,7 @@ function listarProfesores_() {
       agrupaciones: lista_(valores[i][2]),
       programas: lista_(valores[i][4]),
       modulos: lista_(valores[i][5]),
+      horario: horarioDeTexto_(valores[i][6]),
     });
   }
   return profesores;
@@ -153,7 +190,9 @@ function perfil_(p) {
     agrupaciones: p.agrupaciones,
     programas: p.programas,
     modulos: p.modulos,
+    horario: p.horario,
     telefonosNucleo: PropertiesService.getScriptProperties().getProperty('TELEFONOS_NUCLEO') || '0276-3945614',
+    liderPSB: PropertiesService.getScriptProperties().getProperty('LIDER_PSB') || '',
   };
 }
 
@@ -327,6 +366,7 @@ function guardarProfesor_(p, cedulaAnterior, nuevo) {
   var agrupaciones = codigos_(p && p.agrupaciones);
   var programas = codigos_(p && p.programas);
   var modulos = codigos_(p && p.modulos);
+  var horario = horario_(p && p.horario);
   if (!cedulaValida_(cedula)) throw new Error('Cédula inválida.');
   if (!nombre) throw new Error('Falta el nombre del profesor.');
 
@@ -337,13 +377,14 @@ function guardarProfesor_(p, cedulaAnterior, nuevo) {
 
   var valores = [[
     cedula, nombre, agrupaciones.join(', '), new Date().toISOString(), programas.join(', '), modulos.join(', '),
+    textoDeHorario_(horario),
   ]];
   if (fila > 0) {
     hoja.getRange(fila, 1, 1, valores[0].length).setValues(valores);
   } else {
     hoja.appendRow(valores[0]);
   }
-  return { cedula: cedula, nombre: nombre, agrupaciones: agrupaciones, programas: programas, modulos: modulos };
+  return { cedula: cedula, nombre: nombre, agrupaciones: agrupaciones, programas: programas, modulos: modulos, horario: horario };
 }
 
 function eliminarProfesor_(cedula) {
@@ -353,7 +394,86 @@ function eliminarProfesor_(cedula) {
   return true;
 }
 
-/* ---------- Programa Simón Bolívar: informes semanales con fotos ---------- */
+/* ---------- Agrupaciones (catálogo editable) ---------- */
+
+var HOJA_AGRUPACIONES = 'Agrupaciones';
+var ENCABEZADOS_AGRUPACIONES = ['Código', 'Nombre', 'Activa', 'Actualizado'];
+// Las que había en el sitio antes de que el catálogo pasara a la hoja.
+var AGRUPACIONES_INICIALES = [
+  ['PNISPIM', 'PNISPIM'], ['DOPIM', 'DOPIM'], ['RE_Y_MIPIM', 'RE Y MIPIM'], ['PREPARATORIO_PIM', 'PREPARATORIO PIM'],
+  ['INICIACION_INSTRUMENTAL', 'INICIACIÓN INSTRUMENTAL'], ['PRE_INFANTIL_ETAPA_1', 'PRE INFANTIL ETAPA 1'],
+  ['CORO_INFANTIL', 'CORO INFANTIL'], ['ALMA_LLANERA_NIVEL_I', 'ALMA LLANERA NIVEL I'],
+  ['ALMA_LLANERA_NIVEL_II', 'ALMA LLANERA NIVEL II'], ['ALMA_LLANERA_NIVEL_III', 'ALMA LLANERA NIVEL III'],
+  ['ORQUESTAL_PRE_INFANTIL_E2', 'ORQUESTAL PRE INFANTIL ETAPA 2'], ['ORQUESTAL_INFANTIL', 'ORQUESTAL INFANTIL'],
+];
+
+function hojaAgrupaciones_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hoja = ss.getSheetByName(HOJA_AGRUPACIONES);
+  if (!hoja) {
+    hoja = ss.insertSheet(HOJA_AGRUPACIONES);
+    hoja.appendRow(ENCABEZADOS_AGRUPACIONES);
+    hoja.setFrozenRows(1);
+    var ahora = new Date().toISOString();
+    AGRUPACIONES_INICIALES.forEach(function (a) { hoja.appendRow([a[0], a[1], 'SÍ', ahora]); });
+  }
+  return hoja;
+}
+
+/** Pública: los nombres de las agrupaciones no son datos personales. */
+function listarAgrupaciones_() {
+  var hoja = hojaAgrupaciones_();
+  var ultima = hoja.getLastRow();
+  if (ultima < 2) return [];
+  return hoja.getRange(2, 1, ultima - 1, 3).getValues()
+    .filter(function (f) { return String(f[0]).trim(); })
+    .map(function (f) {
+      return { id: String(f[0]).trim(), nombre: String(f[1]).trim(), activa: may_(f[2]) !== 'NO' };
+    });
+}
+
+/** «Coro Juvenil» → «CORO_JUVENIL» (código estable; el nombre se puede cambiar después). */
+function codigoAgrupacion_(nombre, existentes) {
+  var base = String(nombre).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40) || 'AGRUPACION';
+  var codigo = base;
+  for (var n = 2; existentes.indexOf(codigo) >= 0; n++) codigo = base + '_' + n;
+  return codigo;
+}
+
+/** Cambia el nombre o el estado de una agrupación, o agrega una nueva (sin id). */
+function guardarAgrupacion_(a) {
+  var nombre = String((a && a.nombre) || '').trim().slice(0, 80);
+  if (!nombre) throw new Error('Falta el nombre de la agrupación.');
+  var hoja = hojaAgrupaciones_();
+  var ultima = hoja.getLastRow();
+  var codigos = ultima < 2 ? [] : hoja.getRange(2, 1, ultima - 1, 1).getValues().map(function (f) { return String(f[0]).trim(); });
+  var activa = !(a && a.activa === false);
+  var fila = a && a.id ? codigos.indexOf(String(a.id)) : -1;
+  var otra = codigos.map(function (c, i) { return i; }).filter(function (i) {
+    return i !== fila && may_(hoja.getRange(i + 2, 2).getValue()).trim() === may_(nombre).trim();
+  });
+  if (otra.length) throw new Error('Ya hay una agrupación con ese nombre.');
+
+  var ahora = new Date().toISOString();
+  if (fila >= 0) {
+    hoja.getRange(fila + 2, 2, 1, 3).setValues([[nombre, activa ? 'SÍ' : 'NO', ahora]]);
+    return { id: codigos[fila], nombre: nombre, activa: activa };
+  }
+  if (a && a.id) throw new Error('No existe esa agrupación.');
+  var codigo = codigoAgrupacion_(nombre, codigos);
+  hoja.appendRow([codigo, nombre, activa ? 'SÍ' : 'NO', ahora]);
+  return { id: codigo, nombre: nombre, activa: activa };
+}
+
+/* ---------- Programa Simón Bolívar: clases del día e informe semanal ---------- */
+
+/*
+ * Cada escuela tiene una fila por semana en «InformesPSB». El formador guarda
+ * cada clase el mismo día (datos + fotos en Drive) y comparte el mensaje en
+ * Telegram; al final de la semana el sitio arma el Word con esas clases y lo
+ * registra aquí.
+ */
 
 var HOJA_PSB = 'InformesPSB';
 var ENCABEZADOS_PSB = [
@@ -431,6 +551,55 @@ function aLaPapelera_(id) {
   } catch (e) {}
 }
 
+function texto_(valor, maximo) {
+  return String(valor == null ? '' : valor).slice(0, maximo || 500);
+}
+
+function sumarDiasIso_(iso, n) {
+  var p = String(iso).split('-');
+  return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)).toISOString().slice(0, 10);
+}
+
+/** La fecha cae entre el lunes y el domingo de esa semana. */
+function enSemana_(fecha, lunes) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(fecha)) && fecha >= lunes && fecha <= sumarDiasIso_(lunes, 6);
+}
+
+/** Fotos de un día como objetos (la versión anterior guardaba solo los ids). */
+function fotosDeDia_(inf, dia) {
+  return (dia.fotos || []).map(function (f) {
+    if (f && typeof f === 'object') return f;
+    var hallada = (inf.fotos || []).filter(function (x) { return x.id === f; })[0];
+    return hallada ? { id: hallada.id, url: hallada.url, nombre: hallada.nombre } : { id: String(f), url: '', nombre: '' };
+  });
+}
+
+function normalizarInforme_(inf) {
+  inf.dias = (inf.dias || []).map(function (d) {
+    d.fotos = fotosDeDia_(inf, d);
+    return d;
+  });
+  // Lista plana de fotos (la usa la versión anterior del sitio).
+  inf.fotos = [];
+  inf.dias.forEach(function (d) {
+    d.fotos.forEach(function (f) { inf.fotos.push({ id: f.id, url: f.url, nombre: f.nombre, fecha: d.fecha }); });
+  });
+  return inf;
+}
+
+function porFecha_(a, b) {
+  return a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : 0;
+}
+
+function buscarSemana_(hoja, modulo, semana) {
+  var hallado = null;
+  leerJson_(hoja, COL_JSON_PSB).forEach(function (x) {
+    if (!hallado && x.reporte.modulo === modulo && x.reporte.semana === semana) hallado = x;
+  });
+  if (hallado) hallado.reporte = normalizarInforme_(hallado.reporte);
+  return hallado;
+}
+
 function filaPSB_(inf) {
   return [
     inf.id,
@@ -438,45 +607,16 @@ function filaPSB_(inf) {
     inf.semanaTexto || inf.semana,
     (inf.dias || []).map(function (d) { return String(d.fecha).slice(8, 10); }).join(', '),
     may_(inf.profesor),
-    inf.alumnos || 0,
+    inf.alumnos || '',
     inf.actualizadoEn,
     inf.carpeta ? inf.carpeta.url : '',
-    inf.archivo ? inf.archivo.url : '',
+    inf.archivo ? inf.archivo.url : 'WORD PENDIENTE',
     JSON.stringify(inf),
   ];
 }
 
-/**
- * Registra el informe (ya con sus archivos subidos). Si esa escuela ya tenía
- * informe de esa semana, se reemplaza y los archivos anteriores van a la papelera.
- */
-function guardarInformePSB_(profesor, inf) {
-  if (!inf || !inf.modulo || !inf.semana || !inf.archivo || !inf.archivo.id) throw new Error('Informe incompleto.');
-  exigirPSB_(profesor, inf.modulo);
-
-  var hoja = hojaPSB_();
-  var previo = null;
-  leerJson_(hoja, COL_JSON_PSB).forEach(function (x) {
-    if (!previo && x.reporte.modulo === inf.modulo && x.reporte.semana === inf.semana) previo = x;
-  });
-
-  var ahora = new Date().toISOString();
-  if (previo) {
-    var vigentes = {};
-    vigentes[inf.archivo.id] = true;
-    (inf.fotos || []).forEach(function (f) { vigentes[f.id] = true; });
-    [previo.reporte.archivo].concat(previo.reporte.fotos || []).forEach(function (a) {
-      if (a && a.id && !vigentes[a.id]) aLaPapelera_(a.id);
-    });
-    inf.id = previo.reporte.id;
-    inf.creadoEn = previo.reporte.creadoEn;
-  } else {
-    inf.id = Utilities.getUuid();
-    inf.creadoEn = ahora;
-  }
-  inf.profesor = profesor.nombre;
-  inf.actualizadoEn = ahora;
-
+function escribirSemana_(hoja, previo, inf) {
+  inf.actualizadoEn = new Date().toISOString();
   var fila = filaPSB_(inf);
   if (previo) {
     hoja.getRange(previo.fila, 1, 1, fila.length).setValues([fila]);
@@ -486,25 +626,146 @@ function guardarInformePSB_(profesor, inf) {
   return inf;
 }
 
-/** Todos (coordinación) o los de las escuelas del profesor. */
+/**
+ * Guarda (o corrige) la clase de un día. Si es la primera clase de la semana,
+ * crea la fila. Las fotos que tenía ese día y ya no están van a la papelera.
+ */
+function guardarDiaPSB_(profesor, d) {
+  exigirPSB_(profesor, d.modulo);
+  var dia = d.dia || {};
+  if (!d.semana || !enSemana_(dia.fecha, d.semana)) throw new Error('La fecha no corresponde a esa semana.');
+
+  var hoja = hojaPSB_();
+  var previo = buscarSemana_(hoja, d.modulo, d.semana);
+  var inf = previo
+    ? previo.reporte
+    : { id: Utilities.getUuid(), modulo: d.modulo, semana: d.semana, dias: [], creadoEn: new Date().toISOString() };
+  inf.escuela = texto_(d.escuela, 150) || inf.escuela;
+  inf.semanaTexto = texto_(d.semanaTexto, 80) || inf.semanaTexto;
+  if (d.carpeta && d.carpeta.id) inf.carpeta = { id: texto_(d.carpeta.id, 200), url: texto_(d.carpeta.url, 500) };
+
+  var nuevo = {
+    fecha: dia.fecha,
+    horaInicio: texto_(dia.horaInicio, 5),
+    horaFin: texto_(dia.horaFin, 5),
+    descripcion: texto_(dia.descripcion, 3000),
+    tipoActividad: texto_(dia.tipoActividad, 120),
+    atendidos: texto_(dia.atendidos, 120),
+    niveles: texto_(dia.niveles, 200),
+    adultos: texto_(dia.adultos, 200),
+    fotos: (dia.fotos || []).slice(0, 8).map(function (f) {
+      return { id: texto_(f.id, 200), url: texto_(f.url, 500), nombre: texto_(f.nombre, 200) };
+    }),
+    formador: profesor.nombre,
+    guardadoEn: new Date().toISOString(),
+  };
+  var vigentes = {};
+  nuevo.fotos.forEach(function (f) { vigentes[f.id] = true; });
+  inf.dias = inf.dias.filter(function (x) {
+    if (x.fecha !== nuevo.fecha) return true;
+    x.fotos.forEach(function (f) { if (!vigentes[f.id]) aLaPapelera_(f.id); });
+    return false;
+  });
+  inf.dias.push(nuevo);
+  inf.dias.sort(porFecha_);
+  inf.profesor = profesor.nombre;
+  inf.clasesEn = nuevo.guardadoEn; // si es posterior al Word, el Word quedó viejo
+  return escribirSemana_(hoja, previo, inf);
+}
+
+/** Quita una clase guardada por error (y manda sus fotos a la papelera). */
+function quitarDiaPSB_(profesor, d) {
+  exigirPSB_(profesor, d.modulo);
+  var hoja = hojaPSB_();
+  var previo = buscarSemana_(hoja, d.modulo, d.semana);
+  if (!previo) throw new Error('No se encontró esa semana.');
+  var inf = previo.reporte;
+  inf.dias = inf.dias.filter(function (x) {
+    if (x.fecha !== d.fecha) return true;
+    x.fotos.forEach(function (f) { aLaPapelera_(f.id); });
+    return false;
+  });
+  inf.clasesEn = new Date().toISOString();
+  return escribirSemana_(hoja, previo, inf);
+}
+
+/**
+ * Registra el Word de la semana (armado en el sitio con las clases guardadas).
+ * El Word anterior de esa semana, si lo había, va a la papelera.
+ */
+function guardarInformePSB_(profesor, d) {
+  if (!d || !d.modulo || !d.semana || !d.archivo || !d.archivo.id) throw new Error('Informe incompleto.');
+  exigirPSB_(profesor, d.modulo);
+  var hoja = hojaPSB_();
+  var previo = buscarSemana_(hoja, d.modulo, d.semana);
+  var inf;
+
+  if (Array.isArray(d.dias) && d.dias.length) {
+    // Versión anterior del sitio: manda la semana completa de una vez.
+    inf = normalizarInforme_(d);
+    var vigentes = {};
+    vigentes[d.archivo.id] = true;
+    inf.dias.forEach(function (dia) { dia.fotos.forEach(function (f) { vigentes[f.id] = true; }); });
+    if (previo) {
+      var viejos = [previo.reporte.archivo];
+      previo.reporte.dias.forEach(function (dia) { viejos = viejos.concat(dia.fotos); });
+      viejos.forEach(function (a) { if (a && a.id && !vigentes[a.id]) aLaPapelera_(a.id); });
+      inf.id = previo.reporte.id;
+      inf.creadoEn = previo.reporte.creadoEn;
+    } else {
+      inf.id = Utilities.getUuid();
+      inf.creadoEn = new Date().toISOString();
+    }
+  } else {
+    if (!previo || !previo.reporte.dias.length) throw new Error('Primero guarda al menos una clase de la semana.');
+    inf = previo.reporte;
+    if (inf.archivo && inf.archivo.id && inf.archivo.id !== d.archivo.id) aLaPapelera_(inf.archivo.id);
+    if (d.carpeta && d.carpeta.id) inf.carpeta = { id: texto_(d.carpeta.id, 200), url: texto_(d.carpeta.url, 500) };
+  }
+
+  inf.archivo = { id: texto_(d.archivo.id, 200), url: texto_(d.archivo.url, 500), nombre: texto_(d.archivo.nombre, 200) };
+  inf.evento = texto_(d.evento, 200);
+  inf.agrupaciones = texto_(d.agrupaciones, 200);
+  inf.instructores = texto_(d.instructores, 300);
+  inf.alumnos = Number(d.alumnos) || 0;
+  inf.wordEn = new Date().toISOString();
+  inf.wordPor = profesor.nombre;
+  inf.profesor = profesor.nombre;
+  return escribirSemana_(hoja, previo, inf);
+}
+
+/** Todas las semanas (coordinación) o las de las escuelas del profesor. */
 function listarInformesPSB_(profesor) {
   return leerJson_(hojaPSB_(), COL_JSON_PSB)
-    .map(function (x) { return x.reporte; })
+    .map(function (x) { return normalizarInforme_(x.reporte); })
     .filter(function (inf) {
       return !profesor || (profesor.programas.indexOf(PROGRAMA_PSB) >= 0 && profesor.modulos.indexOf(inf.modulo) >= 0);
     });
 }
 
-/** El Word del informe, para descargarlo desde el sitio (Drive es privado). */
+/** Un archivo (foto o Word) de un informe que la persona puede ver. Drive es privado. */
+function descargarArchivoPSB_(profesor, id) {
+  var informes = listarInformesPSB_(profesor);
+  for (var i = 0; i < informes.length; i++) {
+    var inf = informes[i];
+    var ids = inf.archivo ? [inf.archivo.id] : [];
+    inf.dias.forEach(function (d) { d.fotos.forEach(function (f) { ids.push(f.id); }); });
+    if (ids.indexOf(id) >= 0) {
+      var archivo = DriveApp.getFileById(id);
+      var blob = archivo.getBlob();
+      return { nombre: archivo.getName(), base64: Utilities.base64Encode(blob.getBytes()) };
+    }
+  }
+  throw new Error('No se encontró el archivo.');
+}
+
+/** El Word del informe de la semana. */
 function descargarInformePSB_(profesor, id) {
   var informes = listarInformesPSB_(profesor);
   for (var i = 0; i < informes.length; i++) {
-    if (informes[i].id === id) {
-      var blob = DriveApp.getFileById(informes[i].archivo.id).getBlob();
-      return { nombre: informes[i].archivo.nombre, base64: Utilities.base64Encode(blob.getBytes()) };
-    }
+    if (informes[i].id === id && informes[i].archivo) return descargarArchivoPSB_(profesor, informes[i].archivo.id);
   }
-  throw new Error('No se encontró el informe.');
+  throw new Error('Esa semana todavía no tiene Word.');
 }
 
 /* ---------- Web App ---------- */
@@ -518,7 +779,7 @@ function respuesta_(obj) {
 /** Acciones que escriben en la hoja o en Drive: van de una en una. */
 var ESCRIBEN = {
   guardarMio: true, guardar: true, eliminar: true, limpiar: true, guardarProfesor: true,
-  eliminarProfesor: true, subirArchivoPSB: true, guardarInformePSB: true,
+  eliminarProfesor: true, guardarAgrupacion: true, subirArchivoPSB: true, guardarInformePSB: true, guardarDiaPSB: true, quitarDiaPSB: true,
 };
 
 function doPost(e) {
@@ -537,6 +798,11 @@ function doPost(e) {
     var r;
 
     switch (cuerpo.accion) {
+      // Pública: catálogo de agrupaciones (lo usan también las constancias).
+      case 'listarAgrupaciones':
+        r = listarAgrupaciones_();
+        break;
+
       // Profesores: con su cédula, solo sus agrupaciones.
       case 'entrarProfesor':
         r = perfil_(exigirProfesor_(cuerpo.cedula));
@@ -552,6 +818,9 @@ function doPost(e) {
 
       // Programa Simón Bolívar: solo sus escuelas.
       case 'subirArchivoPSB': r = subirArchivoPSB_(exigirProfesor_(cuerpo.cedula), datos); break;
+      case 'guardarDiaPSB': r = guardarDiaPSB_(exigirProfesor_(cuerpo.cedula), datos); break;
+      case 'quitarDiaPSB': r = quitarDiaPSB_(exigirProfesor_(cuerpo.cedula), datos); break;
+      case 'descargarArchivoPSB': r = descargarArchivoPSB_(exigirProfesor_(cuerpo.cedula), datos.id); break;
       case 'guardarInformePSB': r = guardarInformePSB_(exigirProfesor_(cuerpo.cedula), datos); break;
       case 'listarMisInformesPSB': r = listarInformesPSB_(exigirProfesor_(cuerpo.cedula)); break;
       case 'descargarInformePSB': r = descargarInformePSB_(exigirProfesor_(cuerpo.cedula), datos.id); break;
@@ -567,8 +836,10 @@ function doPost(e) {
         r = guardarProfesor_(datos.profesor, datos.cedulaAnterior, datos.nuevo === true);
         break;
       case 'eliminarProfesor': exigirClave_(clave); r = eliminarProfesor_(datos.cedula); break;
+      case 'guardarAgrupacion': exigirClave_(clave); r = guardarAgrupacion_(datos); break;
       case 'listarInformesPSB': exigirClave_(clave); r = listarInformesPSB_(null); break;
       case 'descargarInformePSBCoordinacion': exigirClave_(clave); r = descargarInformePSB_(null, datos.id); break;
+      case 'descargarArchivoPSBCoordinacion': exigirClave_(clave); r = descargarArchivoPSB_(null, datos.id); break;
 
       default:
         return respuesta_({ ok: false, error: 'Acción desconocida: ' + cuerpo.accion });

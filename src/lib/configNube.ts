@@ -4,8 +4,11 @@
  * Cuando la pegues, los reportes se sincronizan con el Google Sheet.
  *
  * Cómo obtenerla: ver apps-script/INSTRUCCIONES.md
+ * VITE_URL_REPORTES la reemplaza solo al compilar pruebas (un servicio simulado).
  */
-export const URL_NUBE = 'https://script.google.com/macros/s/AKfycbzkysCQhQtJWUNudA-HEJBzwApBPhZEfntzjWFjAVde8d6rkio5YcwP4QFW9h-8Eecu/exec';
+const URL_PUBLICADA = 'https://script.google.com/macros/s/AKfycbzkysCQhQtJWUNudA-HEJBzwApBPhZEfntzjWFjAVde8d6rkio5YcwP4QFW9h-8Eecu/exec';
+
+export const URL_NUBE: string = import.meta.env.VITE_URL_REPORTES || URL_PUBLICADA;
 
 export function nubeActiva(): boolean {
   return URL_NUBE.trim().length > 0;

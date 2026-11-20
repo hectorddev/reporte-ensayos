@@ -23,7 +23,7 @@ contenido está en [`src/features/inicio/contenido.ts`](src/features/inicio/cont
 | `/` | Inicio |
 | `/constancias`, `/p/:codigo` | Representantes: solicitar constancias |
 | `/profesores` | Profesores: entran con su cédula; reportes de ensayo de sus agrupaciones e informes semanales del Programa Simón Bolívar |
-| `/admin` | Coordinación (con clave): reportes, profesores, informes Simón Bolívar y constancias |
+| `/admin` | Coordinación (con clave): reportes, perfil y horario de cada profesor, informes Simón Bolívar, agrupaciones y constancias |
 
 ### Reportes mensuales
 

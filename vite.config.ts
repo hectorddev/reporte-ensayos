@@ -1,6 +1,7 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import http from 'http';
+import { fileURLToPath } from 'url';
 
 const API_PORTS = [3001, 8080];
 
@@ -47,5 +48,18 @@ export default defineConfig({
   plugins: [react(), apiProxyFallback()],
   server: {
     port: 5173,
+  },
+  build: {
+    rollupOptions: {
+      // sw-psb.js: envía en segundo plano las clases guardadas sin internet.
+      // Va en la raíz y sin hash para poder registrarlo siempre con el mismo nombre.
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        'sw-psb': fileURLToPath(new URL('./src/sw-psb.ts', import.meta.url)),
+      },
+      output: {
+        entryFileNames: (chunk) => (chunk.name === 'sw-psb' ? 'sw-psb.js' : 'assets/[name]-[hash].js'),
+      },
+    },
   },
 });
